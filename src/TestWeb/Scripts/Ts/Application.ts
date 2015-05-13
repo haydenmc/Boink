@@ -1,7 +1,8 @@
 ﻿class Application {
+    public static test;
     public start(): void {
-        var test = new TestComponent();
-        test.show();
+        Application.test = new TestComponent();
+        Application.test.show();
     }
 }
 

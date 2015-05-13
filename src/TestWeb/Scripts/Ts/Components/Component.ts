@@ -3,6 +3,7 @@
     textNodeIndex: number;
     bindingPath: string;
     bindingText: string;
+    updateCallback: () => void;
 }
 
 class Component {
@@ -60,13 +61,19 @@ class Component {
                     if (typeof this.textBindings[path] === 'undefined') {
                         this.textBindings[path] = new Array();
                     }
-                    this.textBindings[path].push({
+                    var bindingInfo: TextBindingInfo = {
                         elementBindingId: bindingId,
                         textNodeIndex: i,
                         bindingPath: path,
-                        bindingText: node.nodeValue
-                    });
+                        bindingText: node.nodeValue,
+                        updateCallback: () => {
+                            this.triggerBindingUpdate(path);
+                        }
+                    };
+                    (<Observable<any>>this[path]).onValueChanged.subscribe(bindingInfo.updateCallback);
+                    this.textBindings[path].push(bindingInfo);
                 }
+                node.nodeValue = this.resolveBindingText(node.nodeValue); // resolve the binding right away
             }
         }
 
@@ -78,6 +85,35 @@ class Component {
         for (var i = 0; i < rootElement.childNodes.length; i++) {
             this.processBindings(<HTMLElement>rootElement.childNodes[i]);
         }
+    }
+
+    protected triggerBindingUpdate(path: string) {
+        var bindings = this.textBindings[path];
+        for (var i = 0; i < bindings.length; i++) {
+            var binding = bindings[i];
+            var bindingElement = document.getElementById("BindingElement" + binding.elementBindingId);
+
+            // Look for bindings in the text nodes
+            for (var i = 0, textNodeIndex = 0; i < bindingElement.childNodes.length; i++) {
+                if (bindingElement.childNodes[i].nodeType == 3) { // is a text node
+                    if (textNodeIndex == binding.textNodeIndex) {
+                        // Process binding text
+                        bindingElement.childNodes[i].nodeValue = this.resolveBindingText(binding.bindingText);
+                    }
+                    textNodeIndex++;
+                }
+            }
+        }
+    }
+
+    private resolveBindingText(text: string): string {
+        var matches = text.match(Component.bindingRegex);
+        for (var i = 0; i < matches.length; i++) {
+            var path = matches[i].substr(2, matches[i].length - 4);
+            // TODO: Resolve path with dots...
+            text = text.replace(matches[i], this[path].value);
+        }
+        return text;
     }
 
     public show(): void {
