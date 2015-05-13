@@ -10,19 +10,24 @@ class Observable<T> {
 
     public set value(newVal: T) {
         if (this._value != newVal) {
+            this._onValueChanged.fire({ oldValue: this._value, newValue: newVal });
             this._value = newVal;
-            this._onValueChanged.fire(newVal);
         }
     }
 
-    private _onValueChanged: EventHandler<T>;
+    private _onValueChanged: EventHandler<ValueChangedEvent<T>>;
 
-    public get onValueChanged(): EventHandler<T> {
+    public get onValueChanged(): EventHandler<ValueChangedEvent<T>> {
         return this._onValueChanged;
     }
 
     constructor(defaultValue?: T) {
-        this._onValueChanged = new EventHandler<T>();
+        this._onValueChanged = new EventHandler<ValueChangedEvent<T>>();
         this._value = defaultValue;
     }
+}
+
+interface ValueChangedEvent<T> {
+    oldValue: T;
+    newValue: T;
 }
