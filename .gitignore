@@ -195,5 +195,7 @@ ModelManifest.xml
 **/Scripts/Ts/**/*.js
 
 **/wwwroot/application.js
+**/wwwroot/index.html
 
 project.lock.json
+

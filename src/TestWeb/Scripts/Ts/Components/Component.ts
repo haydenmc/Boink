@@ -26,17 +26,17 @@ class Component {
         var parser = new DOMParser();
         var fragment = parser.parseFromString(template.innerHTML, "text/html");
 
-        for (var i = 0; i < fragment.body.childNodes.length; i++) {
-            this.htmlElements.push(<HTMLElement>fragment.body.childNodes.item(i));
+        for (var i = 0; i < fragment.body.children.length; i++) {
+            this.htmlElements.push(<HTMLElement>fragment.body.children.item(i));
         }
         // Process elements for bindings
         for (var i = 0; i < this.htmlElements.length; i++) {
-            this.processBindings(this.htmlElements[i]);
+            this.processElements(this.htmlElements[i]);
         }
         console.log(this.textBindings);
     }
 
-    private processBindings(rootElement: HTMLElement) {
+    private processElements(rootElement: HTMLElement) {
         // Look for bindings in the text nodes
         var textNodes: Array<Node> = [];
         for (var i = 0; i < rootElement.childNodes.length; i++) {
@@ -49,7 +49,7 @@ class Component {
         for (var i = 0; i < textNodes.length; i++) {
             var node = textNodes[i];
             var matches = node.nodeValue.match(Component.bindingRegex)
-            if (matches.length > 0) {
+            if (matches != null && matches.length > 0) {
                 if (bindingId == -1) {
                     // generate and apply element binding ID
                     bindingId = Component.bindingIdCounter;
@@ -77,14 +77,23 @@ class Component {
             }
         }
 
-        //for (var matches: Array<{ match: any; index: number; }> = [], match; match = Component.bindingRegex.exec(html);) {
-        //    matches.push({ match: match, index: match.slice(1).indexOf(match[0]) });
-        //}
-
-        // Process bindings for child elements
-        for (var i = 0; i < rootElement.childNodes.length; i++) {
-            this.processBindings(<HTMLElement>rootElement.childNodes[i]);
+        if (rootElement.hasAttribute("data-component")) {
+            this.processSubComponent(rootElement);
+        } else {
+            // Process bindings for child elements
+            for (var i = 0; i < rootElement.childNodes.length; i++) {
+                if (rootElement.childNodes[i].nodeType == 1) { // This is an element
+                    this.processElements(<HTMLElement>rootElement.childNodes[i]);
+                }
+            }
         }
+    }
+
+    private processSubComponent(element: HTMLElement) {
+        var componentId = element.getAttribute("data-component");
+        var componentInstance = <Component>Object.create(window[componentId].prototype);
+        componentInstance.constructor.apply(componentInstance, new Array(element.parentElement));
+        componentInstance.show();
     }
 
     protected triggerBindingUpdate(path: string) {

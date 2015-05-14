@@ -21,10 +21,19 @@ module.exports = function (grunt) {
                     ]
                 }
             }
+        },
+        includes: {
+            files: {
+                src: ['Templates/index.html'], // Source files 
+                dest: 'wwwroot', // Destination directory 
+                flatten: true,
+                cwd: '.'
+            }
         }
     });
 
     grunt.loadNpmTasks('grunt-typescript');
+    grunt.loadNpmTasks('grunt-includes');
 
-    grunt.registerTask('default', ['typescript']);
+    grunt.registerTask('default', ['typescript', 'includes']);
 };
