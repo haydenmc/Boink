@@ -10,8 +10,9 @@ class Observable<T> {
 
     public set value(newVal: T) {
         if (this._value != newVal) {
-            this._onValueChanged.fire({ oldValue: this._value, newValue: newVal });
+            var oldVal = this._value;
             this._value = newVal;
+            this._onValueChanged.fire({ oldValue: oldVal, newValue: newVal });
         }
     }
 

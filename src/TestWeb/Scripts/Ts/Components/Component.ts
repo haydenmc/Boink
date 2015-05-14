@@ -3,7 +3,7 @@
     textNodeIndex: number;
     bindingPath: string;
     bindingText: string;
-    updateCallback: () => void;
+    updateCallback: (args: ValueChangedEvent<any>) => void;
 }
 
 class Component {
@@ -66,7 +66,7 @@ class Component {
                         textNodeIndex: i,
                         bindingPath: path,
                         bindingText: node.nodeValue,
-                        updateCallback: () => {
+                        updateCallback: (args: ValueChangedEvent<any>) => {
                             this.triggerBindingUpdate(path);
                         }
                     };
