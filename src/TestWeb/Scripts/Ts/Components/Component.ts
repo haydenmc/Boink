@@ -11,10 +11,16 @@ class Component {
     public static bindingIdCounter: number = 0; // Maintains the next 'unique id' applied to elements tracked for bindings
     public elementId: string;
     public title: Observable<string> = new Observable<string>("");
+    protected _isShowing: boolean = false;
+    public get isShowing(): boolean {
+        return this._isShowing;
+    }
     protected parentElement: HTMLElement;
     protected htmlElements: Array<HTMLElement> = new Array<HTMLElement>(); // The HTML elements at the root of this component
 
     protected textBindings: { [bindingPath: string]: Array<TextBindingInfo> } = {}; 
+
+    private bindingPathUpdateQueue: Array<string> = new Array<string>(); // Stores binding updates when the element isn't showing
 
     constructor(id: string, parent?: HTMLElement) {
         this.elementId = id;
@@ -97,6 +103,12 @@ class Component {
     }
 
     protected triggerBindingUpdate(path: string) {
+        if (!this._isShowing) {
+            if (this.bindingPathUpdateQueue.indexOf(path) < 0) {
+                this.bindingPathUpdateQueue.push(path);
+            }
+            return;
+        }
         var bindings = this.textBindings[path];
         for (var i = 0; i < bindings.length; i++) {
             var binding = bindings[i];
@@ -126,6 +138,9 @@ class Component {
     }
 
     public show(): void {
+        if (this._isShowing) {
+            return;
+        }
         var appendParent = document.body;
         if (this.parentElement != null) {
             appendParent = this.parentElement
@@ -133,12 +148,22 @@ class Component {
         for (var i = 0; i < this.htmlElements.length; i++) {
             this.htmlElements[i] = <HTMLElement>appendParent.appendChild(this.htmlElements[i]);
         }
+        this._isShowing = true;
+        // Process queued binding updates
+        for (var i = 0; i < this.bindingPathUpdateQueue.length; i++) {
+            this.triggerBindingUpdate(this.bindingPathUpdateQueue[i]);
+        }
+        this.bindingPathUpdateQueue = new Array<string>(); // clear the queue
     }
 
     public hide(): void {
+        if (!this._isShowing) {
+            return;
+        }
         for (var i = 0; i < this.htmlElements.length; i++) {
             this.htmlElements[i] = <HTMLElement>this.htmlElements[i].parentElement.removeChild(this.htmlElements[i]);
         }
+        this._isShowing = false;
     }
 
     public destroy(): void {
