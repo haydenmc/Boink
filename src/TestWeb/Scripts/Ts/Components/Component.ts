@@ -6,39 +6,76 @@
     updateCallback: (args: ValueChangedEvent<any>) => void;
 }
 
+interface PropertyBindingInfo {
+    bindingPath: string;
+    bindingProperty: string;
+    updateCallback: (args: ValueChangedEvent<any>) => void;
+}
+
+/**
+ * Component is the fundamental base class for any piece of UI that renders to the DOM.
+ * It includes implementations for features like data-binding.
+ */ 
 class Component {
     public static bindingRegex: RegExp = /{{[a-zA-Z._0-9]+}}/g; // Regular expression for bindings
     public static bindingIdCounter: number = 0; // Maintains the next 'unique id' applied to elements tracked for bindings
-    public elementId: string;
-    public title: Observable<string> = new Observable<string>("");
+    public elementId: string; // The unique string that serves as the 'ID' for this Component
+    public title: Observable<string> = new Observable<string>(""); // A default observable field
     protected _isShowing: boolean = false;
     public get isShowing(): boolean {
         return this._isShowing;
     }
-    protected parentElement: HTMLElement;
-    protected htmlElements: Array<HTMLElement> = new Array<HTMLElement>(); // The HTML elements at the root of this component
+    protected parentComponent: Component;
+    protected rootHtmlElement: HTMLElement; // The root HTML element for this component
 
+    protected propertyBindings: { [bindingPath: string]: Array<PropertyBindingInfo> } = {};
     protected textBindings: { [bindingPath: string]: Array<TextBindingInfo> } = {}; 
 
     private bindingPathUpdateQueue: Array<string> = new Array<string>(); // Stores binding updates when the element isn't showing
 
-    constructor(id: string, parent?: HTMLElement) {
+    constructor(id: string, parent?: Component) {
         this.elementId = id;
-        this.parentElement = parent;
+        this.parentComponent = parent;
         var template: HTMLScriptElement = <HTMLScriptElement>document.getElementById("template_" + this.elementId);
         if (template == null) {
             throw new Error("Tried to instantiate non-existing template");
         }
-        var parser = new DOMParser();
-        var fragment = parser.parseFromString(template.innerHTML, "text/html");
+        // Create root element
+        var rootTag = template.getAttribute("data-root-tag");
+        this.rootHtmlElement = document.createElement(rootTag);
 
-        for (var i = 0; i < fragment.body.children.length; i++) {
-            this.htmlElements.push(<HTMLElement>fragment.body.children.item(i));
+        // Process property bindings
+        // TODO: This should happen when processing new child components
+        for (var i = 0; i < template.attributes.length; i++) {
+            var attributeName = template.attributes[i].name;
+            var attributeValue = template.attributes[i].value;
+            if (attributeName.indexOf("data-property-") == 0) {
+                var bindingPath = attributeValue.substr(2, attributeValue.length - 4);
+                var propertyName = attributeName.substr(14);
+
+                if (typeof this.textBindings[bindingPath] === 'undefined') {
+                    this.textBindings[bindingPath] = new Array();
+                }
+                var bindingInfo: PropertyBindingInfo = {
+                    bindingPath: bindingPath,
+                    bindingProperty: propertyName,
+                    updateCallback: (args: ValueChangedEvent<any>) => {
+                        this[propertyName].value = args.newValue;
+                    }
+                };
+                (<Observable<any>>this.parentComponent[bindingPath]).onValueChanged.subscribe(bindingInfo.updateCallback);
+                this.propertyBindings[bindingPath].push(bindingInfo);
+            }
         }
+        var parser = new DOMParser();
+        var parsedDocument = parser.parseFromString(template.innerHTML, "text/html");
+
+        for (var i = 0; i < parsedDocument.body.childNodes.length; i++) {
+            this.rootHtmlElement.appendChild(parsedDocument.body.childNodes.item(i));
+        }
+
         // Process elements for bindings
-        for (var i = 0; i < this.htmlElements.length; i++) {
-            this.processElements(this.htmlElements[i]);
-        }
+        this.processElements(this.rootHtmlElement);
         console.log(this.textBindings);
     }
 
@@ -98,21 +135,15 @@ class Component {
     private processSubComponent(element: HTMLElement) {
         var componentId = element.getAttribute("data-component");
         var componentInstance = <Component>Object.create(window[componentId].prototype);
-        componentInstance.constructor.apply(componentInstance, new Array(element.parentElement));
-        componentInstance.show();
+        componentInstance.constructor.apply(componentInstance, new Array(this));
+        componentInstance.show(element);
     }
 
     protected triggerBindingUpdate(path: string) {
-        if (!this._isShowing) {
-            if (this.bindingPathUpdateQueue.indexOf(path) < 0) {
-                this.bindingPathUpdateQueue.push(path);
-            }
-            return;
-        }
         var bindings = this.textBindings[path];
         for (var i = 0; i < bindings.length; i++) {
             var binding = bindings[i];
-            var bindingElement = document.getElementById("BindingElement" + binding.elementBindingId);
+            var bindingElement = this.rootHtmlElement.querySelector("#BindingElement" + binding.elementBindingId);
 
             // Look for bindings in the text nodes
             for (var i = 0, textNodeIndex = 0; i < bindingElement.childNodes.length; i++) {
@@ -137,39 +168,36 @@ class Component {
         return text;
     }
 
-    public show(): void {
+    public show(replaceElement?: Element): void {
         if (this._isShowing) {
             return;
         }
         var appendParent = document.body;
-        if (this.parentElement != null) {
-            appendParent = this.parentElement
+        if (this.parentComponent != null) {
+            appendParent = this.parentComponent.rootHtmlElement;
         }
-        for (var i = 0; i < this.htmlElements.length; i++) {
-            this.htmlElements[i] = <HTMLElement>appendParent.appendChild(this.htmlElements[i]);
+        if (typeof replaceElement !== 'undefined') {
+            this.rootHtmlElement = <HTMLElement>replaceElement.parentNode.insertBefore(this.rootHtmlElement, replaceElement);
+            replaceElement.parentNode.removeChild(replaceElement);
+        } else {
+            this.rootHtmlElement = <HTMLElement>appendParent.appendChild(this.rootHtmlElement);
         }
         this._isShowing = true;
-        // Process queued binding updates
-        for (var i = 0; i < this.bindingPathUpdateQueue.length; i++) {
-            this.triggerBindingUpdate(this.bindingPathUpdateQueue[i]);
-        }
-        this.bindingPathUpdateQueue = new Array<string>(); // clear the queue
     }
 
     public hide(): void {
         if (!this._isShowing) {
             return;
         }
-        for (var i = 0; i < this.htmlElements.length; i++) {
-            this.htmlElements[i] = <HTMLElement>this.htmlElements[i].parentElement.removeChild(this.htmlElements[i]);
-        }
+
+        this.rootHtmlElement = <HTMLElement>this.rootHtmlElement.parentElement.removeChild(this.rootHtmlElement);
         this._isShowing = false;
     }
 
     public destroy(): void {
         this.hide();
-        this.htmlElements = null;
-        this.parentElement = null;
+        this.rootHtmlElement = null;
+        this.parentComponent = null;
 
         // TODO: Clear up bindings and such
     }

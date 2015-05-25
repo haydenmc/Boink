@@ -7,7 +7,7 @@
     public itemAdded: (args: ObservableArrayEventArgs<T>) => void;
     public itemRemoved: (args: ObservableArrayEventArgs<T>) => void;
 
-    constructor(parentElement?: HTMLElement) {
+    constructor(parentComponent?: Component) {
         // Set up callbacks
         this.itemAdded = (args) => {
             this.processItemAdded(args.item, args.position);
@@ -27,7 +27,7 @@
         this.itemsSource.onValueChanged.subscribe(this.itemsSourceChanged);
         this.itemsSource.value = new ObservableArray<T>();
 
-        super("Items", parentElement);
+        super("Items", parentComponent);
     }
 
     private processItemAdded(item: T, position: number) {
