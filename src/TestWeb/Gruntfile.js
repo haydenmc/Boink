@@ -29,11 +29,18 @@ module.exports = function (grunt) {
                 flatten: true,
                 cwd: '.'
             }
-        }
+        },
+        copy: {
+            main: {
+                src: 'node_modules/webcomponents.js/webcomponents.min.js',
+                dest: 'wwwroot/webcomponents.js'
+            },
+        },
     });
 
     grunt.loadNpmTasks('grunt-typescript');
     grunt.loadNpmTasks('grunt-includes');
+    grunt.loadNpmTasks('grunt-contrib-copy');
 
-    grunt.registerTask('default', ['typescript', 'includes']);
+    grunt.registerTask('default', ['typescript', 'includes', 'copy']);
 };

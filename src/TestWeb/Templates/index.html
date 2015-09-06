@@ -8,12 +8,26 @@
             font-family: sans-serif;
         }
     </style>
+    <script type="text/javascript" src="webcomponents.js"></script>
+    <script type="text/javascript" src="application.js"></script>
 </head>
 <body>
     <!-- Templates -->
     include "Components/Application.html"
     include "Components/TestComponent.html"
 
-    <script type="text/javascript" src="application.js"></script>
+    
+    <ui-application testAttr="dingDong">
+    </ui-application>
+
+    <template id="ui-application">
+        <ui-my-test-component></ui-my-test-component>
+        <ui-my-test-component></ui-my-test-component>
+        <ui-my-test-component></ui-my-test-component>
+    </template>
+
+    <template id="ui-my-test-component">
+        <strong>Blah blah yay!</strong>
+    </template>
 </body>
 </html>

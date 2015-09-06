@@ -15,6 +15,7 @@
     <SchemaVersion>2.0</SchemaVersion>
     <DevelopmentServerPort>27053</DevelopmentServerPort>
     <GruntGulpQueried>True</GruntGulpQueried>
+    <TypeScriptCompileBlocked>True</TypeScriptCompileBlocked>
   </PropertyGroup>
   <Import Project="$(VSToolsPath)\DNX\Microsoft.DNX.targets" Condition="'$(VSToolsPath)' != ''" />
 </Project>
