@@ -3,9 +3,10 @@
 class Application extends Component {
     public static instance;
 
-    constructor() {
-        super();
+    public createdCallback() {
+        super.createdCallback();
         Application.instance = this;
+        this._dataContext.value = { poop: new Observable<string>("Yay poop") };
     }
 }
 

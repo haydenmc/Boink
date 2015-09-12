@@ -17,17 +17,14 @@
     include "Components/TestComponent.html"
 
     
-    <ui-application testAttr="dingDong">
+    <ui-application>
+        <ui-my-test-component></ui-my-test-component>
+        <h1>Also, {{poop}}</h1>
+        <p>"{{poop}}"</p>
     </ui-application>
 
-    <template id="ui-application">
-        <ui-my-test-component></ui-my-test-component>
-        <ui-my-test-component></ui-my-test-component>
-        <ui-my-test-component></ui-my-test-component>
-    </template>
-
     <template id="ui-my-test-component">
-        <strong>Blah blah yay!</strong>
+        <strong>{{poop}}? {{poop}}.</strong>
     </template>
 </body>
 </html>
