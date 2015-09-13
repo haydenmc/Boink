@@ -6,10 +6,7 @@ class Application extends Component {
     public createdCallback() {
         super.createdCallback();
         Application.instance = this;
-        this._dataContext.value = { poop: new Observable<string>("Yay poop"), poops: null };
-        this._dataContext.value.poops = new Observable<ObservableArray<string>>(new ObservableArray<string>());
-        this._dataContext.value.poops.value.push("Hey!");
-        this._dataContext.value.poops.value.push("Hello!");
+        this._dataContext.value = new MyTestDataModel();
     }
 }
 

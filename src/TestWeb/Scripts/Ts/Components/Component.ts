@@ -121,12 +121,16 @@ class Component extends HTMLElement {
 
     /**
      * Processes any text bindings that occur inside of a node tree.
+     * TODO: Handle updating bindings when the data context is changed.
      * @param {Node} node The root node
      */
-    protected processTextBindings(node: Node) {
+    protected processTextBindings(node: Node, dataContext?: Observable<any>) {
+        if (typeof dataContext === 'undefined' || dataContext == null) {
+            dataContext = this.dataContext;
+        }
         if (node.nodeType == 1 || node.nodeType == 11) { // this is an element node (or document fragment)
             for (var i = 0; i < node.childNodes.length; i++) {
-                this.processTextBindings(node.childNodes[i]);
+                this.processTextBindings(node.childNodes[i], dataContext);
             }
         }
         else if (node.nodeType == 3) { // this is a text node (base case).
@@ -134,8 +138,9 @@ class Component extends HTMLElement {
             if (bindingMatches != null && bindingMatches.length > 0) {
                 for (var i = 0; i < bindingMatches.length; i++) {
                     var path = bindingMatches[i].substr(2, bindingMatches[i].length - 4);
-                    if (typeof this.dataContext.value[path] !== 'undefined') {
+                    if (typeof dataContext.value[path] !== 'undefined') {
                         var bindingInfo: TextNodeBindingInformation = {
+                            dataContext: dataContext,
                             textNode: node,
                             bindingPath: path,
                             originalText: node.nodeValue,
@@ -144,7 +149,7 @@ class Component extends HTMLElement {
                         bindingInfo.updateCallback = (args: ValueChangedEvent<any>) => {
                             this.resolveTextNodeBindings(bindingInfo);
                         }
-                        (<Observable<any>>this.dataContext.value[path]).onValueChanged.subscribe(bindingInfo.updateCallback);
+                        (<Observable<any>>dataContext.value[path]).onValueChanged.subscribe(bindingInfo.updateCallback);
                         this.textNodeBindings.push(bindingInfo);
                     } else {
                         throw new Error("Text node data-binding in " + this.tagName
@@ -175,7 +180,7 @@ class Component extends HTMLElement {
         for (var i = 0; i < matches.length; i++) {
             var path = matches[i].substr(2, matches[i].length - 4);
             // TODO: Resolve path with dots...
-            text = text.replace(matches[i], this.dataContext.value[path].value);
+            text = text.replace(matches[i], bindingInfo.dataContext.value[path].value);
         }
         bindingInfo.textNode.nodeValue = text;
     }
@@ -211,6 +216,7 @@ class Component extends HTMLElement {
  * A class to store text node binding information.
  */
 class TextNodeBindingInformation {
+    public dataContext: Observable<any>;
     public bindingPath: string;
     public textNode: Node;
     public originalText: string;
