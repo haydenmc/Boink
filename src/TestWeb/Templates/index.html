@@ -19,8 +19,11 @@
     
     <ui-application>
         <ui-my-test-component></ui-my-test-component>
-        <h1>Also, {{poop}}</h1>
-        <p>"{{poop}}"</p>
+        <ui-repeater data-context="{{poops}}">
+            <template>
+                <p>Item!</p>
+            </template>
+        </ui-repeater>
     </ui-application>
 
     <template id="ui-my-test-component">
