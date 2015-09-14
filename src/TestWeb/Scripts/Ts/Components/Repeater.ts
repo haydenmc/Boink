@@ -25,6 +25,7 @@ class Repeater extends Component {
 
     /**
      * Meant to be called if the data context is ever changed, requiring a refresh of the list.
+     * TODO: Release data bindings
      */
     public dataContextUpdated() {
         for (var i = 0; i < this.itemNodes.length; i++) {
@@ -34,6 +35,25 @@ class Repeater extends Component {
         }
         this.itemNodes.splice(0, this.itemNodes.length);
         this.populateAllItems();
+        (<ObservableArray<any>>this.dataContext.value).itemAdded.subscribe((arg) => this.itemAdded(arg));
+    }
+
+    /**
+     * Called when an item has been added to the backing observable array.
+     * @param {ObservableArrayEventArgs} arg Arguments detailing what was added and where
+     */
+    public itemAdded(arg: ObservableArrayEventArgs<any>): void {
+        var clone = document.importNode(this.template.content, true);
+        var cloneNodes = new Array<Node>();
+        for (var j = 0; j < clone.childNodes.length; j++) {
+            cloneNodes.push(clone.childNodes[j]);
+        }
+        this.itemNodes.push(cloneNodes);
+        this.appendChild(clone);
+        for (var j = 0; j < cloneNodes.length; j++) {
+            this.processTextBindings(cloneNodes[j], new Observable<any>(arg.item));
+        }
+        this.resolveAllTextBindings();
     }
 
     /**

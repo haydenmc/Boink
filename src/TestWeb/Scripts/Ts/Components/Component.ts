@@ -61,15 +61,17 @@ class Component extends HTMLElement {
      */
     public attachedCallback() {
         console.log("Component attached.");
-        // Bind to the data-context of the parent element (if it exists). 
-        var parentElement: HTMLElement = this;
-        while (typeof (<any>parentElement).dataContext === 'undefined' || (<any> parentElement).dataContext.value == null) {
-            parentElement = parentElement.parentElement;
-            if (parentElement == null) {
-                throw new Error("No data context could be found in parents for element '" + this.tagName + "'");
+        if (this.dataContext.value == null) {
+            // Bind to the data-context of the parent element (if it exists). 
+            var parentElement: HTMLElement = this;
+            while (typeof (<any>parentElement).dataContext === 'undefined' || (<any>parentElement).dataContext.value == null) {
+                parentElement = parentElement.parentElement;
+                if (parentElement == null) {
+                    throw new Error("No data context could be found in parents for element '" + this.tagName + "'");
+                }
             }
+            this._dataContext = (<any>parentElement).dataContext;
         }
-        this._dataContext = (<any>parentElement).dataContext;
 
         // Bind using data-context attribute if any.
         this.processDataContextAttributeBinding();
@@ -82,7 +84,7 @@ class Component extends HTMLElement {
      * This method checks the data-context attribute for a binding expression
      * and performs the binding of dataContext if necessary.
      */
-    protected processDataContextAttributeBinding() {
+    protected processDataContextAttributeBinding(): void {
         var dataContextAttr = this.attributes.getNamedItem("data-context");
         if (dataContextAttr != null && dataContextAttr.value != "") {
             var dataContextAttrBindingMatches = dataContextAttr.value.match(Component.bindingRegex);
@@ -107,15 +109,57 @@ class Component extends HTMLElement {
      * Applies shadow DOM template if it is defined.
      * TODO: copy content from child elements into shadow, indicated by some kind of binding markup...
      */
-    protected applyShadowTemplate() {
+    protected applyShadowTemplate(): void {
         var template: any = document.querySelector("template#" + this.tagName.toLowerCase());
         if (typeof template !== 'undefined' && template != null) {
             var clone = document.importNode(template.content, true);
             this.shadowRoot = (<any>this).createShadowRoot();
+            // Apply data-context to all shadow components (they can't break through to parent components)
+            for (var i = 0; i < clone.childNodes.length; i++) {
+                this.applyMyDataContext(clone.childNodes[i]);
+            }
             this.shadowRoot.appendChild(clone);
             // Process text node bindings on the shadow template.
             this.processTextBindings(this.shadowRoot);
             this.resolveAllTextBindings();
+            // Process event bindings
+            this.processEventBindings(this.shadowRoot);
+        }
+    }
+
+    /**
+     * Searches for event attributes on nodes and binds them to specified functions.
+     * @param {Node} node The root node
+     */
+    protected processEventBindings(node: Node): void {
+        if (node.nodeType == 1) {
+            for (var i = 0; i < node.attributes.length; i++) {
+                var attrName = node.attributes[i].name.toLowerCase();
+                var attrValue = node.attributes[i].value;
+                if (attrName.substr(0, 11) == "data-event-") {
+                    var eventName = attrName.substr(11, attrName.length - 11);
+                    if (typeof this[attrValue] !== 'undefined') {
+                        node.addEventListener(eventName, (arg) => this[attrValue](arg));
+                    }
+                }
+            }
+        }
+        for (var i = 0; i < node.childNodes.length; i++) {
+            this.processEventBindings(node.childNodes[i]);
+        }
+    }
+
+    /**
+     * Applies the data context of this component to any component contained
+     * within the specified node.
+     * @param {Node} node The root node
+     */
+    protected applyMyDataContext(node: Node): void {
+        if (node instanceof Component) {
+            (<Component>node)._dataContext = this.dataContext;
+        }
+        for (var i = 0; i < node.childNodes.length; i++) {
+            this.applyMyDataContext(node.childNodes[i]);
         }
     }
 
