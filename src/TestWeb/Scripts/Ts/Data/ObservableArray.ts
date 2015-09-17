@@ -37,11 +37,22 @@ class ObservableArray<T> {
     }
 
     /**
-     * Adds an item to the array
+     * Adds an item to the end of the array
+     * @param {T} item The item to add
      */
     public push(item: T): void {
         this.itemStore.push(item);
         this.itemAdded.fire({ item: item, position: this.itemStore.length - 1 });
+    }
+
+    /**
+     * Inserts at item at the specified position (0 = start)
+     * @param {T} item The item to insert
+     * @param {number} index The index to insert at
+     */
+    public insert(item: T, index: number): void {
+        this.itemStore.splice(index, 0, item);
+        this.itemAdded.fire({ item: item, position: index });
     }
 
     /**

@@ -11,7 +11,7 @@ class Repeater extends Component {
     private template: any;
 
     /**
-     * Used to store a reference to the DOM nodes of each list item.
+     * Used to store a reference to the DOM nodes used to display each list item.
      */
     private itemNodes: Array<Array<Node>>;
 
@@ -36,6 +36,7 @@ class Repeater extends Component {
         this.itemNodes.splice(0, this.itemNodes.length);
         this.populateAllItems();
         (<ObservableArray<any>>this.dataContext.value).itemAdded.subscribe((arg) => this.itemAdded(arg));
+        (<ObservableArray<any>>this.dataContext.value).itemRemoved.subscribe((arg) => this.itemRemoved(arg));
     }
 
     /**
@@ -43,17 +44,44 @@ class Repeater extends Component {
      * @param {ObservableArrayEventArgs} arg Arguments detailing what was added and where
      */
     public itemAdded(arg: ObservableArrayEventArgs<any>): void {
+        // Clone the item template
         var clone = document.importNode(this.template.content, true);
         var cloneNodes = new Array<Node>();
         for (var j = 0; j < clone.childNodes.length; j++) {
             cloneNodes.push(clone.childNodes[j]);
         }
-        this.itemNodes.push(cloneNodes);
-        this.appendChild(clone);
+
+        // Capture the reference node before we shift the reference array
+        var refNode = null;
+        if (arg.position < this.itemNodes.length) {
+            refNode = this.itemNodes[arg.position][0];
+        }
+
+        this.itemNodes.splice(arg.position, 0, cloneNodes);
+
+        // Append to the DOM in the proper place
+        if (arg.position == (<ObservableArray<any>>this.dataContext.value).size - 1) {
+            this.appendChild(clone);
+        } else {
+            this.insertBefore(clone, refNode);
+        }
+        
+        // Process text bindings
         for (var j = 0; j < cloneNodes.length; j++) {
             this.processTextBindings(cloneNodes[j], new Observable<any>(arg.item));
         }
+
+        // Resolve text bindings
+        // TODO: Only resolve the new ones
         this.resolveAllTextBindings();
+    }
+
+    /**
+     * Called when an item has been removed from the backing observable array.
+     * @param {ObservableArrayEventArgs} arg Arguments detailing what was removed and where
+     */
+    public itemRemoved(arg: ObservableArrayEventArgs<any>): void {
+        // TODO
     }
 
     /**

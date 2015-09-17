@@ -166,6 +166,7 @@ class Component extends HTMLElement {
     /**
      * Processes any text bindings that occur inside of a node tree.
      * TODO: Handle updating bindings when the data context is changed.
+     * TODO: Move this into a separate DataBinder class
      * @param {Node} node The root node
      */
     protected processTextBindings(node: Node, dataContext?: Observable<any>) {
