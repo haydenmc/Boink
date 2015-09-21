@@ -22,6 +22,14 @@ module.exports = function (grunt) {
                 }
             }
         },
+        tslint: {
+            options: {
+                configuration: grunt.file.readJSON("tslint.json")
+            },
+            files: {
+                src: ['Scripts/Ts/**/*.ts']
+            }
+        },
         includes: {
             files: {
                 src: ['Templates/index.html'], // Source files 
@@ -41,6 +49,7 @@ module.exports = function (grunt) {
     grunt.loadNpmTasks('grunt-typescript');
     grunt.loadNpmTasks('grunt-includes');
     grunt.loadNpmTasks('grunt-contrib-copy');
+    grunt.loadNpmTasks('grunt-tslint');
 
-    grunt.registerTask('default', ['typescript', 'includes', 'copy']);
+    grunt.registerTask('default', ['typescript', 'tslint', 'includes', 'copy']);
 };

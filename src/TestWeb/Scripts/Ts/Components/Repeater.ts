@@ -60,12 +60,12 @@ class Repeater extends Component {
         this.itemNodes.splice(arg.position, 0, cloneNodes);
 
         // Append to the DOM in the proper place
-        if (arg.position == (<ObservableArray<any>>this.dataContext.value).size - 1) {
+        if (arg.position === (<ObservableArray<any>>this.dataContext.value).size - 1) {
             this.appendChild(clone);
         } else {
             this.insertBefore(clone, refNode);
         }
-        
+
         // Process text bindings
         for (var j = 0; j < cloneNodes.length; j++) {
             this.processTextBindings(cloneNodes[j], new Observable<any>(arg.item));
@@ -95,7 +95,7 @@ class Repeater extends Component {
             throw new Error("Template undefined for repeater component."
                 + " A repeater element should always contain a template element.");
         }
-        
+
         if (!(this.dataContext.value instanceof ObservableArray)) {
             throw new Error("Invalid data context for repeater component."
                 + " A repeater element should have an observable array set as the data context.");

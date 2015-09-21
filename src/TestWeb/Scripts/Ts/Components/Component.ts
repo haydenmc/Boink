@@ -15,7 +15,9 @@ class Component extends HTMLElement {
     /**
      * The data-context that all data-binding occurs against.
      */
+    /* tslint:disable:variable-name */
     protected _dataContext: Observable<any>;
+    /* tslint:enable:variable-name */
     public get dataContext(): Observable<any> {
         return this._dataContext;
     }
@@ -39,7 +41,7 @@ class Component extends HTMLElement {
      *
      * @param {string} elementName The tag of this element in HTML
      * @param {class} theClass The component class to bind this element to
-     */ 
+     */
     public static register(elementName: string, theClass: any): void {
         (<any>document).registerElement(elementName, {
             prototype: theClass.prototype
@@ -64,7 +66,7 @@ class Component extends HTMLElement {
         if (this.dataContext.value == null) {
             // Bind to the data-context of the parent element (if it exists). 
             var parentElement: HTMLElement = this;
-            while (typeof (<any>parentElement).dataContext === 'undefined' || (<any>parentElement).dataContext.value == null) {
+            while (typeof (<any>parentElement).dataContext === "undefined" || (<any>parentElement).dataContext.value == null) {
                 parentElement = parentElement.parentElement;
                 if (parentElement == null) {
                     throw new Error("No data context could be found in parents for element '" + this.tagName + "'");
@@ -75,7 +77,7 @@ class Component extends HTMLElement {
 
         // Bind using data-context attribute if any.
         this.processDataContextAttributeBinding();
-        
+
         // Find and apply template.
         this.applyShadowTemplate();
     }
@@ -86,12 +88,12 @@ class Component extends HTMLElement {
      */
     protected processDataContextAttributeBinding(): void {
         var dataContextAttr = this.attributes.getNamedItem("data-context");
-        if (dataContextAttr != null && dataContextAttr.value != "") {
+        if (dataContextAttr != null && dataContextAttr.value !== "") {
             var dataContextAttrBindingMatches = dataContextAttr.value.match(Component.bindingRegex);
             if (dataContextAttrBindingMatches != null && dataContextAttrBindingMatches.length > 0) {
                 // Only process the first match. We can only data-bind to one property.
                 var dataContextAttrBindingName = dataContextAttrBindingMatches[0].substr(2, dataContextAttrBindingMatches[0].length - 4);
-                if (typeof this.dataContext.value[dataContextAttrBindingName] !== 'undefined') {
+                if (typeof this.dataContext.value[dataContextAttrBindingName] !== "undefined") {
                     this._dataContext = this.dataContext.value[dataContextAttrBindingName];
                 } else {
                     throw new Error("Couldn't bind data context to non-existing property '"
@@ -111,7 +113,7 @@ class Component extends HTMLElement {
      */
     protected applyShadowTemplate(): void {
         var template: any = document.querySelector("template#" + this.tagName.toLowerCase());
-        if (typeof template !== 'undefined' && template != null) {
+        if (typeof template !== "undefined" && template != null) {
             var clone = document.importNode(template.content, true);
             this.shadowRoot = (<any>this).createShadowRoot();
             // Apply data-context to all shadow components (they can't break through to parent components)
@@ -132,13 +134,13 @@ class Component extends HTMLElement {
      * @param {Node} node The root node
      */
     protected processEventBindings(node: Node): void {
-        if (node.nodeType == 1) {
+        if (node.nodeType === 1) {
             for (var i = 0; i < node.attributes.length; i++) {
                 var attrName = node.attributes[i].name.toLowerCase();
                 var attrValue = node.attributes[i].value;
-                if (attrName.substr(0, 11) == "data-event-") {
+                if (attrName.substr(0, 11) === "data-event-") {
                     var eventName = attrName.substr(11, attrName.length - 11);
-                    if (typeof this[attrValue] !== 'undefined') {
+                    if (typeof this[attrValue] !== "undefined") {
                         node.addEventListener(eventName, (arg) => this[attrValue](arg));
                     }
                 }
@@ -170,20 +172,19 @@ class Component extends HTMLElement {
      * @param {Node} node The root node
      */
     protected processTextBindings(node: Node, dataContext?: Observable<any>) {
-        if (typeof dataContext === 'undefined' || dataContext == null) {
+        if (typeof dataContext === "undefined" || dataContext == null) {
             dataContext = this.dataContext;
         }
-        if (node.nodeType == 1 || node.nodeType == 11) { // this is an element node (or document fragment)
+        if (node.nodeType === 1 || node.nodeType === 11) { // this is an element node (or document fragment)
             for (var i = 0; i < node.childNodes.length; i++) {
                 this.processTextBindings(node.childNodes[i], dataContext);
             }
-        }
-        else if (node.nodeType == 3) { // this is a text node (base case).
+        } else if (node.nodeType === 3) { // this is a text node (base case).
             var bindingMatches = node.nodeValue.match(Component.bindingRegex);
             if (bindingMatches != null && bindingMatches.length > 0) {
                 for (var i = 0; i < bindingMatches.length; i++) {
                     var path = bindingMatches[i].substr(2, bindingMatches[i].length - 4);
-                    if (typeof dataContext.value[path] !== 'undefined') {
+                    if (typeof dataContext.value[path] !== "undefined") {
                         var bindingInfo: TextNodeBindingInformation = {
                             dataContext: dataContext,
                             textNode: node,
@@ -193,7 +194,7 @@ class Component extends HTMLElement {
                         };
                         bindingInfo.updateCallback = (args: ValueChangedEvent<any>) => {
                             this.resolveTextNodeBindings(bindingInfo);
-                        }
+                        };
                         (<Observable<any>>dataContext.value[path]).onValueChanged.subscribe(bindingInfo.updateCallback);
                         this.textNodeBindings.push(bindingInfo);
                     } else {
@@ -247,7 +248,7 @@ class Component extends HTMLElement {
      */
     public attributeChangedCallback(attrName: string, oldVal: string, newVal: string): void {
         console.log("Attribute '" + attrName + "' changed.");
-        if (typeof this[attrName] !== 'undefined') {
+        if (typeof this[attrName] !== "undefined") {
             if (this[attrName] instanceof Observable) {
                 (<Observable<any>>this[attrName]).value = newVal;
             } else {
