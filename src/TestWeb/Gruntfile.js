@@ -51,5 +51,5 @@ module.exports = function (grunt) {
     grunt.loadNpmTasks('grunt-contrib-copy');
     grunt.loadNpmTasks('grunt-tslint');
 
-    grunt.registerTask('default', ['typescript', 'tslint', 'includes', 'copy']);
+    grunt.registerTask('default', ['tslint', 'typescript', 'includes', 'copy']);
 };

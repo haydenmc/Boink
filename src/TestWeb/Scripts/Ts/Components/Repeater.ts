@@ -68,12 +68,12 @@ class Repeater extends Component {
 
         // Process text bindings
         for (var j = 0; j < cloneNodes.length; j++) {
-            this.processTextBindings(cloneNodes[j], new Observable<any>(arg.item));
+            this.dataBinder.processBindings(cloneNodes[j], new Observable<any>(arg.item));
         }
 
         // Resolve text bindings
         // TODO: Only resolve the new ones
-        this.resolveAllTextBindings();
+        this.dataBinder.resolveAllBindings();
     }
 
     /**
@@ -122,10 +122,10 @@ class Repeater extends Component {
             this.itemNodes.push(cloneNodes);
             this.appendChild(clone);
             for (var j = 0; j < cloneNodes.length; j++) {
-                this.processTextBindings(cloneNodes[j], new Observable<any>(array.get(i)));
+                this.dataBinder.processBindings(cloneNodes[j], new Observable<any>(array.get(i)));
             }
         }
-        this.resolveAllTextBindings();
+        this.dataBinder.resolveAllBindings();
     }
 }
 

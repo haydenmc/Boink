@@ -3,11 +3,6 @@
  */
 class Component extends HTMLElement {
     /**
-     * The regular expression used to detect bindings in templates.
-     */
-    public static bindingRegex: RegExp = /{{[a-zA-Z._0-9]+}}/g;
-
-    /**
      * The shadow DOM root for this element.
      */
     protected shadowRoot;
@@ -23,9 +18,9 @@ class Component extends HTMLElement {
     }
 
     /**
-     * An array to store all of the text node bindings maintained in this component.
+     * The data binder that will handle all data binding that occurs for this component.
      */
-    protected textNodeBindings: Array<TextNodeBindingInformation>;
+    protected dataBinder: DataBinder;
 
     /**
      * Constructor - redirects to createdCallback as required by web components.
@@ -54,7 +49,7 @@ class Component extends HTMLElement {
     public createdCallback() {
         console.log("Component created: " + this.tagName);
         this._dataContext = new Observable<any>();
-        this.textNodeBindings = new Array<TextNodeBindingInformation>();
+        this.dataBinder = new DataBinder(this.dataContext);
     }
 
     /**
@@ -85,11 +80,12 @@ class Component extends HTMLElement {
     /**
      * This method checks the data-context attribute for a binding expression
      * and performs the binding of dataContext if necessary.
+     * TODO: This should probably be DataBinder's job.
      */
     protected processDataContextAttributeBinding(): void {
         var dataContextAttr = this.attributes.getNamedItem("data-context");
         if (dataContextAttr != null && dataContextAttr.value !== "") {
-            var dataContextAttrBindingMatches = dataContextAttr.value.match(Component.bindingRegex);
+            var dataContextAttrBindingMatches = dataContextAttr.value.match(DataBinder.bindingRegex);
             if (dataContextAttrBindingMatches != null && dataContextAttrBindingMatches.length > 0) {
                 // Only process the first match. We can only data-bind to one property.
                 var dataContextAttrBindingName = dataContextAttrBindingMatches[0].substr(2, dataContextAttrBindingMatches[0].length - 4);
@@ -122,8 +118,8 @@ class Component extends HTMLElement {
             }
             this.shadowRoot.appendChild(clone);
             // Process text node bindings on the shadow template.
-            this.processTextBindings(this.shadowRoot);
-            this.resolveAllTextBindings();
+            this.dataBinder.processBindings(this.shadowRoot);
+            this.dataBinder.resolveAllBindings();
             // Process event bindings
             this.processEventBindings(this.shadowRoot);
         }
@@ -166,72 +162,6 @@ class Component extends HTMLElement {
     }
 
     /**
-     * Processes any text bindings that occur inside of a node tree.
-     * TODO: Handle updating bindings when the data context is changed.
-     * TODO: Move this into a separate DataBinder class
-     * @param {Node} node The root node
-     */
-    protected processTextBindings(node: Node, dataContext?: Observable<any>) {
-        if (typeof dataContext === "undefined" || dataContext == null) {
-            dataContext = this.dataContext;
-        }
-        if (node.nodeType === 1 || node.nodeType === 11) { // this is an element node (or document fragment)
-            for (var i = 0; i < node.childNodes.length; i++) {
-                this.processTextBindings(node.childNodes[i], dataContext);
-            }
-        } else if (node.nodeType === 3) { // this is a text node (base case).
-            var bindingMatches = node.nodeValue.match(Component.bindingRegex);
-            if (bindingMatches != null && bindingMatches.length > 0) {
-                for (var i = 0; i < bindingMatches.length; i++) {
-                    var path = bindingMatches[i].substr(2, bindingMatches[i].length - 4);
-                    if (typeof dataContext.value[path] !== "undefined") {
-                        var bindingInfo: TextNodeBindingInformation = {
-                            dataContext: dataContext,
-                            textNode: node,
-                            bindingPath: path,
-                            originalText: node.nodeValue,
-                            updateCallback: null
-                        };
-                        bindingInfo.updateCallback = (args: ValueChangedEvent<any>) => {
-                            this.resolveTextNodeBindings(bindingInfo);
-                        };
-                        (<Observable<any>>dataContext.value[path]).onValueChanged.subscribe(bindingInfo.updateCallback);
-                        this.textNodeBindings.push(bindingInfo);
-                    } else {
-                        throw new Error("Text node data-binding in " + this.tagName
-                            + " failed on non- existing property '" + path + "'.");
-                    }
-                }
-            }
-        }
-    }
-
-    /**
-     * Resolves all known text node bindings for this component.
-     */
-    public resolveAllTextBindings(): void {
-        for (var i = 0; i < this.textNodeBindings.length; i++) {
-            this.resolveTextNodeBindings(this.textNodeBindings[i]);
-        }
-    }
-
-    /**
-     * Called to resolve bindings on a specific text node.
-     * @param {TextNodeBindingInformation} bindingInfo An object containing
-     * the information gathered on the binding when it was parsed.
-     */
-    public resolveTextNodeBindings(bindingInfo: TextNodeBindingInformation) {
-        var text = bindingInfo.originalText;
-        var matches = text.match(Component.bindingRegex);
-        for (var i = 0; i < matches.length; i++) {
-            var path = matches[i].substr(2, matches[i].length - 4);
-            // TODO: Resolve path with dots...
-            text = text.replace(matches[i], bindingInfo.dataContext.value[path].value);
-        }
-        bindingInfo.textNode.nodeValue = text;
-    }
-
-    /**
      * Called by the browser when this instance is removed from the DOM.
      */
     public detachedCallback() {
@@ -256,15 +186,4 @@ class Component extends HTMLElement {
             }
         }
     }
-}
-
-/**
- * A class to store text node binding information.
- */
-class TextNodeBindingInformation {
-    public dataContext: Observable<any>;
-    public bindingPath: string;
-    public textNode: Node;
-    public originalText: string;
-    public updateCallback: (args: ValueChangedEvent<any>) => void;
 }
