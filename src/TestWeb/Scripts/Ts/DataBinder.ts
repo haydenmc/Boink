@@ -34,14 +34,18 @@ class DataBinder {
      * @param {Node} node The root node
      * @param {Observable} dataContext The data context this binding should use, if not the default
      */
-    public processBindings(node: Node, dataContext?: Observable<any>) {
+    public processBindings(node: Node, dataContext?: Observable<any>): Array<NodeDataBindingInformation> {
+        var addedBindings = new Array<NodeDataBindingInformation>();
         if (typeof dataContext === "undefined" || dataContext == null) {
             dataContext = this.dataContext;
         }
         if (node.nodeType === 1 || node.nodeType === 11) { // this is an element node (or document fragment)
             // TODO: scan for attribute bindings, etc. in element nodes
             for (var i = 0; i < node.childNodes.length; i++) {
-                this.processBindings(node.childNodes[i], dataContext);
+                var recursiveResult = this.processBindings(node.childNodes[i], dataContext);
+                for (var j = 0; j < recursiveResult.length; j++) {
+                    addedBindings.push(recursiveResult[j]);
+                }
             }
         } else if (node.nodeType === 3) { // this is a text node (base case).
             var bindingMatches = node.nodeValue.match(DataBinder.bindingRegex);
@@ -61,12 +65,14 @@ class DataBinder {
                         };
                         (<Observable<any>>dataContext.value[path]).onValueChanged.subscribe(bindingInfo.updateCallback);
                         this.nodeDataBindings.push(bindingInfo);
+                        addedBindings.push(bindingInfo);
                     } else {
                         throw new Error("Node data-binding failed on non- existing property '" + path + "'.");
                     }
                 }
             }
         }
+        return addedBindings;
     }
 
     /**
@@ -87,11 +93,46 @@ class DataBinder {
     }
 
     /**
+     * Convenience method to resolve bindings on a list of binding info.
+     * @param {NodeDataBindingInformation[]} bindingInfo List of binding information objects
+     */
+    public resolveBindings(bindingInfo: Array<NodeDataBindingInformation>) {
+        for (var i = 0; i < bindingInfo.length; i++) {
+            this.resolveBinding(bindingInfo[i]);
+        }
+    }
+
+    /**
      * Resolves all known node bindings for this component.
      */
     public resolveAllBindings(): void {
         for (var i = 0; i < this.nodeDataBindings.length; i++) {
             this.resolveBinding(this.nodeDataBindings[i]);
+        }
+    }
+
+    /**
+     * Unsubscribes update callbacks for the specified binding and removes it from the binding catalog.
+     * @param {NodeDataBindingInformation} bindingInfo The binding information specifying which binding to release.
+     */
+    public releaseBinding(bindingInfo: NodeDataBindingInformation) {
+        var observableProperty = <Observable<any>>bindingInfo.dataContext.value[bindingInfo.bindingPath];
+        observableProperty.onValueChanged.unSubscribe(bindingInfo.updateCallback);
+        for (var i = this.nodeDataBindings.length - 1; i--; ) {
+            if (this.nodeDataBindings[i] === bindingInfo) {
+                this.nodeDataBindings.splice(i, 1);
+            }
+        }
+    }
+
+    /**
+     * Unsubscribes update callbacks for the specified bindings and removes them from the binding catalog.
+     * @param {NodeDataBindingInformation[]} bindingInfo Array of binding information objects 
+     * specifying which bindings to release.
+     */
+    public releaseBindings(bindingInfo: Array<NodeDataBindingInformation>) {
+        for (var i = 0; i < bindingInfo.length; i++) {
+            this.releaseBinding(bindingInfo[i]);
         }
     }
 }

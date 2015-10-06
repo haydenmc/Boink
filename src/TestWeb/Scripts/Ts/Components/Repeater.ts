@@ -16,11 +16,17 @@ class Repeater extends Component {
     private itemNodes: Array<Array<Node>>;
 
     /**
+     * Used to store a reference to the data bindings that occur for each list item.
+     */
+    private itemNodeBindings: Array<Array<NodeDataBindingInformation>>;
+
+    /**
      * Called by the browser when an instance of this element/component is created.
      */
     public createdCallback() {
         super.createdCallback();
         this.itemNodes = new Array<Array<Node>>();
+        this.itemNodeBindings = new Array<Array<NodeDataBindingInformation>>();
     }
 
     /**
@@ -34,6 +40,7 @@ class Repeater extends Component {
             }
         }
         this.itemNodes.splice(0, this.itemNodes.length);
+        this.itemNodeBindings.splice(0, this.itemNodeBindings.length);
         this.populateAllItems();
         (<ObservableArray<any>>this.dataContext.value).itemAdded.subscribe((arg) => this.itemAdded(arg));
         (<ObservableArray<any>>this.dataContext.value).itemRemoved.subscribe((arg) => this.itemRemoved(arg));
@@ -67,13 +74,19 @@ class Repeater extends Component {
         }
 
         // Process text bindings
+        var itemBindings = new Array<NodeDataBindingInformation>();
         for (var j = 0; j < cloneNodes.length; j++) {
-            this.dataBinder.processBindings(cloneNodes[j], new Observable<any>(arg.item));
+            var nodeBindings = this.dataBinder.processBindings(cloneNodes[j], new Observable<any>(arg.item));
+            for (var k = 0; k < nodeBindings.length; k++) {
+                itemBindings.push(nodeBindings[k]);
+            }
         }
 
+        // Append to the array in the proper place
+        this.itemNodeBindings.splice(arg.position, 0, itemBindings);
+
         // Resolve text bindings
-        // TODO: Only resolve the new ones
-        this.dataBinder.resolveAllBindings();
+        this.dataBinder.resolveBindings(itemBindings);
     }
 
     /**
@@ -81,7 +94,17 @@ class Repeater extends Component {
      * @param {ObservableArrayEventArgs} arg Arguments detailing what was removed and where
      */
     public itemRemoved(arg: ObservableArrayEventArgs<any>): void {
-        // TODO
+        // Release all the associated data bindings
+        var itemBindings = this.itemNodeBindings[arg.position];
+        this.dataBinder.releaseBindings(itemBindings);
+        this.itemNodeBindings.splice(arg.position, 1);
+
+        // Remove nodes from the DOM
+        var nodesToBeRemoved = this.itemNodes[arg.position];
+        for (var i = 0; i < nodesToBeRemoved.length; i++) {
+            nodesToBeRemoved[i].parentNode.removeChild(nodesToBeRemoved[i]);
+        }
+        this.itemNodes.splice(arg.position, 1);
     }
 
     /**
@@ -109,7 +132,7 @@ class Repeater extends Component {
 
     /**
      * Reads every item from the observable array, processes data binding for it,
-     * and adds it to the DOM.
+     * and adds it to the DOM. Assumes all processed list info / DOM is clean.
      */
     private populateAllItems(): void {
         var array = <ObservableArray<any>>this.dataContext.value;
@@ -121,9 +144,14 @@ class Repeater extends Component {
             }
             this.itemNodes.push(cloneNodes);
             this.appendChild(clone);
+            var itemBindings = new Array<NodeDataBindingInformation>();
             for (var j = 0; j < cloneNodes.length; j++) {
-                this.dataBinder.processBindings(cloneNodes[j], new Observable<any>(array.get(i)));
+                var nodeBindings = this.dataBinder.processBindings(cloneNodes[j], new Observable<any>(array.get(i)));
+                for (var k = 0; k < nodeBindings.length; k++) {
+                    itemBindings.push(nodeBindings[k]);
+                }
             }
+            this.itemNodeBindings.push(itemBindings);
         }
         this.dataBinder.resolveAllBindings();
     }

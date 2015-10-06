@@ -72,7 +72,7 @@ class ObservableArray<T> {
         if (index < 0) {
             throw "Item not found in array";
         }
-        this.itemStore = this.itemStore.splice(index);
+        this.itemStore.splice(index, 1);
         this.itemRemoved.fire({ item: item, position: index });
     }
 
@@ -85,7 +85,7 @@ class ObservableArray<T> {
             throw "Index outside of array bounds.";
         }
         var item = this.itemStore[index];
-        this.itemStore = this.itemStore.splice(index);
+        this.itemStore.splice(index, 1);
         this.itemRemoved.fire({ item: item, position: index });
     }
 
