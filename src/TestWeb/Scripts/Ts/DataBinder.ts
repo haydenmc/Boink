@@ -52,7 +52,9 @@ class DataBinder {
             if (bindingMatches != null && bindingMatches.length > 0) {
                 for (var i = 0; i < bindingMatches.length; i++) {
                     var path = bindingMatches[i].substr(2, bindingMatches[i].length - 4);
-                    if (typeof dataContext.value[path] !== "undefined") {
+                    if (dataContext != null &&
+                        dataContext.value != null &&
+                        typeof dataContext.value[path] !== "undefined") {
                         var bindingInfo: NodeDataBindingInformation = {
                             dataContext: dataContext,
                             node: node,
@@ -87,7 +89,14 @@ class DataBinder {
         for (var i = 0; i < matches.length; i++) {
             var path = matches[i].substr(2, matches[i].length - 4);
             // TODO: Resolve path with dots...
-            text = text.replace(matches[i], bindingInfo.dataContext.value[path].value);
+            var bindingValue = "";
+            if (bindingInfo.dataContext != null
+                && bindingInfo.dataContext.value != null
+                && bindingInfo.dataContext.value[path] != null
+                && bindingInfo.dataContext.value[path].value != null) {
+                bindingValue = bindingInfo.dataContext.value[path].value;
+            }
+            text = text.replace(matches[i], bindingValue);
         }
         bindingInfo.node.nodeValue = text;
     }

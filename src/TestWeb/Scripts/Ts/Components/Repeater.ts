@@ -51,11 +51,15 @@ class Repeater extends Component {
      * @param {ObservableArrayEventArgs} arg Arguments detailing what was added and where
      */
     public itemAdded(arg: ObservableArrayEventArgs<any>): void {
-        // Clone the item template
+        // Throw the item into an observable for data context and bindings
+        var itemDataContext = new Observable<any>(arg.item);
+
+        // Clone the item template, apply data context to any components
         var clone = document.importNode(this.template.content, true);
         var cloneNodes = new Array<Node>();
         for (var j = 0; j < clone.childNodes.length; j++) {
             cloneNodes.push(clone.childNodes[j]);
+            this.applyMyDataContext(clone.childNodes[j], itemDataContext);
         }
 
         // Capture the reference node before we shift the reference array
@@ -76,7 +80,7 @@ class Repeater extends Component {
         // Process text bindings
         var itemBindings = new Array<NodeDataBindingInformation>();
         for (var j = 0; j < cloneNodes.length; j++) {
-            var nodeBindings = this.dataBinder.processBindings(cloneNodes[j], new Observable<any>(arg.item));
+            var nodeBindings = this.dataBinder.processBindings(cloneNodes[j], itemDataContext);
             for (var k = 0; k < nodeBindings.length; k++) {
                 itemBindings.push(nodeBindings[k]);
             }
@@ -137,16 +141,18 @@ class Repeater extends Component {
     private populateAllItems(): void {
         var array = <ObservableArray<any>>this.dataContext.value;
         for (var i = 0; i < array.size; i++) {
+            var itemDataContext = new Observable<any>(array.get(i));
             var clone = document.importNode(this.template.content, true);
             var cloneNodes = new Array<Node>();
             for (var j = 0; j < clone.childNodes.length; j++) {
                 cloneNodes.push(clone.childNodes[j]);
+                this.applyMyDataContext(clone.childNodes[j], itemDataContext);
             }
             this.itemNodes.push(cloneNodes);
             this.appendChild(clone);
             var itemBindings = new Array<NodeDataBindingInformation>();
             for (var j = 0; j < cloneNodes.length; j++) {
-                var nodeBindings = this.dataBinder.processBindings(cloneNodes[j], new Observable<any>(array.get(i)));
+                var nodeBindings = this.dataBinder.processBindings(cloneNodes[j], itemDataContext);
                 for (var k = 0; k < nodeBindings.length; k++) {
                     itemBindings.push(nodeBindings[k]);
                 }

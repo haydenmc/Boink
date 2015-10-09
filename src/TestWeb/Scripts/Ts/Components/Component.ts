@@ -151,13 +151,18 @@ class Component extends HTMLElement {
      * Applies the data context of this component to any component contained
      * within the specified node.
      * @param {Node} node The root node
+     * @param {Observable?} dataContext Optionally the data context to apply, if not the object's
      */
-    protected applyMyDataContext(node: Node): void {
-        if (node instanceof Component) {
-            (<Component>node)._dataContext = this.dataContext;
+    protected applyMyDataContext(node: Node, dataContext?: Observable<any>): void {
+        if (typeof dataContext === "undefined" || dataContext == null) {
+            dataContext = this.dataContext;
         }
-        for (var i = 0; i < node.childNodes.length; i++) {
-            this.applyMyDataContext(node.childNodes[i]);
+        if (node instanceof Component) {
+            (<Component>node)._dataContext.value = dataContext.value;
+        } else {
+            for (var i = 0; i < node.childNodes.length; i++) {
+                this.applyMyDataContext(node.childNodes[i], dataContext);
+            }
         }
     }
 
