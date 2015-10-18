@@ -6,20 +6,10 @@ Click here to learn more. http://go.microsoft.com/fwlink/?LinkID=513275&clcid=0x
 module.exports = function (grunt) {
     grunt.initConfig({
         pkg: grunt.file.readJSON('package.json'),
-        typescript: {
-            base: {
-                src: ['Scripts/Ts/**/*.ts'],
-                dest: 'wwwroot/application.js',
-                options: {
-                    module: 'amd', //or commonjs 
-                    target: 'es5', //or es3 
-                    rootDir: 'Scripts/Ts',
-                    sourceMap: false,
-                    declaration: false,
-                    references: [
-                        "Scripts/Typings/**/*.d.ts"
-                    ]
-                }
+        ts: {
+            default : {
+                src: ["Scripts/Ts/**/*.ts"],
+                out: 'wwwroot/application.js'
             }
         },
         tslint: {
@@ -46,10 +36,10 @@ module.exports = function (grunt) {
         },
     });
 
-    grunt.loadNpmTasks('grunt-typescript');
+    grunt.loadNpmTasks('grunt-ts');
     grunt.loadNpmTasks('grunt-includes');
     grunt.loadNpmTasks('grunt-contrib-copy');
     grunt.loadNpmTasks('grunt-tslint');
 
-    grunt.registerTask('default', ['tslint', 'typescript', 'includes', 'copy']);
+    grunt.registerTask('default', ['tslint', 'ts', 'includes', 'copy']);
 };

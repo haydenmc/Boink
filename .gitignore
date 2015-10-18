@@ -199,4 +199,6 @@ ModelManifest.xml
 
 project.lock.json
 
-/src/TestWeb/wwwroot/webcomponents.js
+/src/Boink/wwwroot/webcomponents.js
+/src/Boink/wwwroot/*.js.map
+/src/Boink/.tscache
