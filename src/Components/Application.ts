@@ -6,7 +6,6 @@ class Application extends Component {
     public createdCallback() {
         super.createdCallback();
         Application.instance = this;
-        this._dataContext.value = new TodoDataModel();
     }
 }
 
