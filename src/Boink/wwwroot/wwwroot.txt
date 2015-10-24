@@ -1,3 +1,0 @@
-﻿This is where the public web content live :)
-
-This file's here so Git creates the folder.
