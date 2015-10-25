@@ -117,6 +117,12 @@ class Component extends HTMLElement {
                 this.applyMyDataContext(clone.childNodes[i]);
             }
             this.shadowRoot.appendChild(clone);
+            if (window.ShadowDOMPolyfill) { // HACK: Work with webcomponents.js to maintain style encapsulation
+                var style = this.shadowRoot.querySelector("style");
+                if (style) {
+                    style.innerHTML = window.WebComponents.ShadowCSS.shimStyle(style, this.tagName.toLowerCase());
+                }
+            }
             // Process text node bindings on the shadow template.
             this.dataBinder.processBindings(this.shadowRoot);
             this.dataBinder.resolveAllBindings();
