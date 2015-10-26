@@ -1,4 +1,6 @@
-﻿interface ObservableArrayEventArgs<T> {
+﻿/// <reference path="../EventHandler.ts" />
+
+interface ObservableArrayEventArgs<T> {
     item: T;
     position: number;
 }

@@ -39,6 +39,9 @@ class DataBinder {
         if (typeof dataContext === "undefined" || dataContext == null) {
             dataContext = this.dataContext;
         }
+        if (node instanceof Component) {
+            return addedBindings; // Don't attempt to data-bind inside of a Component.
+        }
         if (node.nodeType === 1 || node.nodeType === 11) { // this is an element node (or document fragment)
             // TODO: scan for attribute bindings, etc. in element nodes
             for (var i = 0; i < node.childNodes.length; i++) {

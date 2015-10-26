@@ -1,4 +1,7 @@
-﻿/**
+﻿/// <reference path="../Data/Observable.ts" />
+/// <reference path="../DataBinder.ts" />
+
+/**
  * This is the base class for every Component (element).
  */
 class Component extends HTMLElement {
@@ -117,10 +120,11 @@ class Component extends HTMLElement {
                 this.applyMyDataContext(clone.childNodes[i]);
             }
             this.shadowRoot.appendChild(clone);
-            if (window.ShadowDOMPolyfill) { // HACK: Work with webcomponents.js to maintain style encapsulation
+            // HACK: Work with webcomponents.js to maintain style encapsulation
+            if ((<any>window).ShadowDOMPolyfill) {
                 var style = this.shadowRoot.querySelector("style");
                 if (style) {
-                    style.innerHTML = window.WebComponents.ShadowCSS.shimStyle(style, this.tagName.toLowerCase());
+                    style.innerHTML = (<any>window).WebComponents.ShadowCSS.shimStyle(style, this.tagName.toLowerCase());
                 }
             }
             // Process text node bindings on the shadow template.
