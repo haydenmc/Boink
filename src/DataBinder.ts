@@ -1,4 +1,7 @@
-﻿/**
+﻿/// <reference path="Components/Component.ts" />
+/// <reference path="Data/Observable.ts" />
+
+/**
  * This class serves as the foundation for data binding in Components,
  * and maybe eventually beyond.
  */
@@ -21,6 +24,10 @@ class DataBinder {
     /* tslint:enable:variable-name */
     public get dataContext(): Observable<any> {
         return this._dataContext;
+    }
+    public set dataContext(newContext: Observable<any>) {
+        this._dataContext = newContext;
+        this.resolveAllBindings();
     }
 
     constructor(dataContext?: Observable<any>) {
@@ -54,25 +61,35 @@ class DataBinder {
             var bindingMatches = node.nodeValue.match(DataBinder.bindingRegex);
             if (bindingMatches != null && bindingMatches.length > 0) {
                 for (var i = 0; i < bindingMatches.length; i++) {
-                    var path = bindingMatches[i].substr(2, bindingMatches[i].length - 4);
-                    if (dataContext != null &&
-                        dataContext.value != null &&
-                        typeof dataContext.value[path] !== "undefined") {
+                    // Resolve paths with dots in them
+                    var absolutePath = bindingMatches[i].substr(2, bindingMatches[i].length - 4);
+                    var path = absolutePath;
+                    var bindingContext: Observable<any> = dataContext;
+                    while (path.indexOf(".") >= 0) {
+                        var subPath = path.substr(0, path.indexOf("."));
+                        path = path.substr(path.indexOf(".") + 1);
+                        if (bindingContext.value == null) {
+                            bindingContext = null;
+                            break;
+                        }
+                        bindingContext = bindingContext.value[subPath];
+                    }
+                    if (dataContext != null && bindingContext != null) {
                         var bindingInfo: NodeDataBindingInformation = {
                             dataContext: dataContext,
                             node: node,
-                            bindingPath: path,
+                            bindingPath: absolutePath,
                             originalText: node.nodeValue,
                             updateCallback: null
                         };
                         bindingInfo.updateCallback = (args: ValueChangedEvent<any>) => {
                             this.resolveBinding(bindingInfo);
                         };
-                        (<Observable<any>>dataContext.value[path]).onValueChanged.subscribe(bindingInfo.updateCallback);
+                        (<Observable<any>>bindingContext.value[path]).onValueChanged.subscribe(bindingInfo.updateCallback);
                         this.nodeDataBindings.push(bindingInfo);
                         addedBindings.push(bindingInfo);
                     } else {
-                        throw new Error("Node data-binding failed on non- existing property '" + path + "'.");
+                        throw new Error("Node data-binding failed on non- existing property '" + absolutePath + "'.");
                     }
                 }
             }
@@ -91,7 +108,7 @@ class DataBinder {
         var matches = text.match(DataBinder.bindingRegex);
         for (var i = 0; i < matches.length; i++) {
             var path = matches[i].substr(2, matches[i].length - 4);
-            // TODO: Resolve path with dots...
+            // Resolve the binding path
             var bindingValue = "";
             if (bindingInfo.dataContext != null
                 && bindingInfo.dataContext.value != null

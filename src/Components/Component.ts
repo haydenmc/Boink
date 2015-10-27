@@ -19,6 +19,10 @@ class Component extends HTMLElement {
     public get dataContext(): Observable<any> {
         return this._dataContext;
     }
+    public set dataContext(newContext: Observable<any>) {
+        this._dataContext = newContext;
+        this.dataBinder.dataContext = newContext;
+    }
 
     /**
      * The data binder that will handle all data binding that occurs for this component.
@@ -70,7 +74,7 @@ class Component extends HTMLElement {
                     throw new Error("No data context could be found in parents for element '" + this.tagName + "'");
                 }
             }
-            this._dataContext = (<any>parentElement).dataContext;
+            this.dataContext = (<any>parentElement).dataContext;
         }
 
         // Bind using data-context attribute if any.
@@ -84,6 +88,7 @@ class Component extends HTMLElement {
      * This method checks the data-context attribute for a binding expression
      * and performs the binding of dataContext if necessary.
      * TODO: This should probably be DataBinder's job.
+     * TODO: And also this looks really gross.
      */
     protected processDataContextAttributeBinding(): void {
         var dataContextAttr = this.attributes.getNamedItem("data-context");
@@ -92,8 +97,20 @@ class Component extends HTMLElement {
             if (dataContextAttrBindingMatches != null && dataContextAttrBindingMatches.length > 0) {
                 // Only process the first match. We can only data-bind to one property.
                 var dataContextAttrBindingName = dataContextAttrBindingMatches[0].substr(2, dataContextAttrBindingMatches[0].length - 4);
-                if (typeof this.dataContext.value[dataContextAttrBindingName] !== "undefined") {
-                    this._dataContext = this.dataContext.value[dataContextAttrBindingName];
+                var bindingContext = this.dataContext;
+                // Follow paths with dots
+                while (dataContextAttrBindingName.indexOf(".") >= 0) {
+                    var pathSection = dataContextAttrBindingName.substr(0, dataContextAttrBindingName.indexOf("."));
+                    dataContextAttrBindingName = dataContextAttrBindingName.substr(dataContextAttrBindingName.indexOf(".") + 1);
+                    if (typeof bindingContext.value[pathSection] !== "undefined") {
+                        bindingContext = bindingContext.value[pathSection];
+                    } else {
+                        throw new Error("Couldn't bind data context to non-existing property '"
+                            + pathSection + "' in " + this.tagName + ".");
+                    }
+                }
+                if (typeof bindingContext.value[dataContextAttrBindingName] !== "undefined") {
+                    this.dataContext = bindingContext.value[dataContextAttrBindingName];
                 } else {
                     throw new Error("Couldn't bind data context to non-existing property '"
                         + dataContextAttrBindingName + "' in " + this.tagName + ".");
