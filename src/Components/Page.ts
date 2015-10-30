@@ -46,6 +46,7 @@ class Page extends Component {
             var clone = document.importNode(template.content, true);
             for (var i = 0; i < clone.childNodes.length; i++) {
                 this.contentNodes.push(clone.childNodes[i]);
+                this.setParentComponent(clone.childNodes[i]);
             }
             this.appendChild(clone);
             for (var i = 0; i < clone.childNodes.length; i++) {

@@ -22,12 +22,25 @@ class Repeater extends Component {
     private itemNodeBindings: Array<Array<NodeDataBindingInformation>>;
 
     /**
+     * Stores the callbacks that should be triggered on item events.
+     */
+    private itemEventCallbacks: { [eventName: string] : (dataContext: any) => any };
+
+    /**
      * Called by the browser when an instance of this element/component is created.
      */
     public createdCallback() {
         super.createdCallback();
         this.itemNodes = new Array<Array<Node>>();
         this.itemNodeBindings = new Array<Array<NodeDataBindingInformation>>();
+        this.itemEventCallbacks = { };
+    }
+
+    /**
+     * Override processing of event bindings - we take care of this ourselves.
+     */
+    protected processEventBindings(node: Node): void {
+        return;
     }
 
     /**
@@ -61,6 +74,8 @@ class Repeater extends Component {
         for (var j = 0; j < clone.childNodes.length; j++) {
             cloneNodes.push(clone.childNodes[j]);
             this.applyMyDataContext(clone.childNodes[j], itemDataContext);
+            this.setParentComponent(clone.childNodes[j], this.parentComponent);
+            this.applyRepeaterEvents(clone.childNodes[j], itemDataContext);
         }
 
         // Capture the reference node before we shift the reference array
@@ -130,6 +145,22 @@ class Repeater extends Component {
                 + " A repeater element should have an observable array set as the data context.");
         }
 
+        // Check if we have any events to bind
+        for (var i = 0; i < this.attributes.length; i++) {
+            var attributeName = this.attributes[i].name;
+            var attributeValue = this.attributes[i].value;
+            if (attributeName.indexOf("data-event-item-") === 0) {
+                var eventName = attributeName.replace("data-event-item-", "");
+                if (this.parentComponent && this.parentComponent[attributeValue]) {
+                    this.itemEventCallbacks[eventName] = this.parentComponent[attributeValue];
+                } else {
+                    console.error(this.tagName + " attempted to bind event to unexisting callback '"
+                        + attributeValue + "' on "
+                        + this.parentComponent.tagName);
+                }
+            }
+        }
+
         this.dataContext.onValueChanged.subscribe(() => {
             this.dataContextUpdated();
         });
@@ -150,6 +181,8 @@ class Repeater extends Component {
             for (var j = 0; j < clone.childNodes.length; j++) {
                 cloneNodes.push(clone.childNodes[j]);
                 this.applyMyDataContext(clone.childNodes[j], itemDataContext);
+                this.setParentComponent(clone.childNodes[j], this.parentComponent);
+                this.applyRepeaterEvents(clone.childNodes[j], itemDataContext);
             }
             this.itemNodes.push(cloneNodes);
             this.parentNode.insertBefore(clone, refNode);
@@ -164,6 +197,19 @@ class Repeater extends Component {
             this.itemNodeBindings.push(itemBindings);
         }
         this.dataBinder.resolveAllBindings();
+    }
+
+    /**
+     * Applies set of events to particular node
+     * @param {Node} node to apply events to
+     * @param {any} dataContext Data context for this event
+     */
+    private applyRepeaterEvents(node: Node, dataContext: any) {
+        for (var eventName in this.itemEventCallbacks) {
+            if (this.itemEventCallbacks[eventName]) {
+                node.addEventListener(eventName, (args) => this.itemEventCallbacks[eventName](dataContext));
+            }
+        }
     }
 }
 

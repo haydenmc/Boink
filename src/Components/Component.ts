@@ -25,6 +25,11 @@ class Component extends HTMLElement {
     }
 
     /**
+     * Maintains a reference to the parent Component
+     */
+    public parentComponent: Component;
+
+    /**
      * The data binder that will handle all data binding that occurs for this component.
      */
     protected dataBinder: DataBinder;
@@ -79,6 +84,9 @@ class Component extends HTMLElement {
 
         // Bind using data-context attribute if any.
         this.processDataContextAttributeBinding();
+
+        // Respond to data context changes
+        // TODO
 
         // Find and apply template.
         this.applyShadowTemplate();
@@ -135,6 +143,7 @@ class Component extends HTMLElement {
             // Apply data-context to all shadow components (they can't break through to parent components)
             for (var i = 0; i < clone.childNodes.length; i++) {
                 this.applyMyDataContext(clone.childNodes[i]);
+                this.setParentComponent(clone.childNodes[i]);
             }
             this.shadowRoot.appendChild(clone);
             // HACK: Work with webcomponents.js to maintain style encapsulation
@@ -189,6 +198,25 @@ class Component extends HTMLElement {
         } else {
             for (var i = 0; i < node.childNodes.length; i++) {
                 this.applyMyDataContext(node.childNodes[i], dataContext);
+            }
+        }
+    }
+
+    /**
+     * Sets the parentComponent property of any child Components to specified Component.
+     * @param {Node} node The root node
+     * @param {Component} component The component to set as parent
+     */
+    protected setParentComponent(node: Node, component?: Component) {
+        var newParent = this;
+        if (component) {
+            newParent = component;
+        }
+        if (node instanceof Component) {
+            (<Component> node).parentComponent = newParent;
+        } else {
+            for (var i = 0; i < node.childNodes.length; i++) {
+                this.setParentComponent(node.childNodes[i], component);
             }
         }
     }
