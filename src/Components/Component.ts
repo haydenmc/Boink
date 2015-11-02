@@ -198,7 +198,7 @@ class Component extends HTMLElement {
             dataContext = this.dataContext;
         }
         if (node instanceof Component) {
-            (<Component>node)._dataContext.value = dataContext.value;
+            (<Component>node)._dataContext = dataContext;
         } else {
             for (var i = 0; i < node.childNodes.length; i++) {
                 this.applyMyDataContext(node.childNodes[i], dataContext);
