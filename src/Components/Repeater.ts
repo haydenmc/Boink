@@ -63,10 +63,12 @@ class Repeater extends Component {
             }
         }
 
-        this.dataContext.onValueChanged.subscribe(() => {
-            this.dataContextUpdated();
-        });
-        this.dataContextUpdated();
+        // Populate our items (if we have any)
+        if (this.dataContext && this.dataContext.value instanceof ObservableArray) {
+            this.populateAllItems();
+        } else {
+            console.warn(this.tagName + " attached without a valid data context, expecting an ObservableArray.");
+        }
     }
 
     /**
@@ -78,9 +80,9 @@ class Repeater extends Component {
 
     /**
      * Meant to be called if the data context is ever changed, requiring a refresh of the list.
-     * TODO: Release data bindings
      */
-    public dataContextUpdated() {
+    public dataContextUpdated(oldContext: IObservable<any>, newContext: IObservable<any>) {
+        super.dataContextUpdated(oldContext, newContext);
         this.clearItems();
         this.populateAllItems();
         (<ObservableArray<any>>this.dataContext.value).itemAdded.subscribe((arg) => this.itemAdded(arg));
@@ -122,7 +124,7 @@ class Repeater extends Component {
      * @param {Observable<any>} dataContext The data context of the new item
      * @param {number?} position The position the item should be added. Added last if not specified.
      */
-    private addItem(dataContext: Observable<any>, position?: number) {
+    private addItem(dataContext: IObservable<any>, position?: number) {
         if (typeof position === "undefined") {
             position = this.repeaterItems.length;
         }
@@ -209,7 +211,7 @@ Component.register("ui-repeater", Repeater);
  * A class to store information on each item in a Repeater component.
  */
 interface RepeaterItem {
-    dataContext: Observable<any>;
+    dataContext: IObservable<any>;
     dataBinder: DataBinder;
     nodes: Node[];
 }

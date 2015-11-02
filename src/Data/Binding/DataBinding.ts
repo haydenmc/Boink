@@ -7,9 +7,9 @@
  */
 class DataBinding {
     /**
-     * Data context to process bindings against
+     * Data binder to process bindings against
      */
-    public dataContext: Observable<any>;
+    public dataBinder: DataBinder;
 
     /**
      * Full path relative to data context to the property
@@ -41,7 +41,7 @@ class DataBinding {
      * The value of the property itself.
      */
     public get value(): any {
-        return DataBinder.resolvePropertyPath(this.path, this.dataContext).value;
+        return DataBinder.resolvePropertyPath(this.path, this.dataBinder.dataContext).value;
     }
 
     /**
@@ -49,8 +49,8 @@ class DataBinding {
      * @param {string} path The property path to bind
      * @param {Observable<any>} The data context to bind against 
      */
-    constructor(path: string, dataContext: Observable<any>) {
-        this.dataContext = dataContext;
+    constructor(path: string, dataBinder: DataBinder) {
+        this.dataBinder = dataBinder;
         this.path = path;
         this.childBindings = {};
         if (path.indexOf(".") >= 0) {
@@ -61,22 +61,24 @@ class DataBinding {
         this.onValueChanged = new EventHandler<DataBindingValueChangedEvent>();
         this.updateCallback = (args) => {
             this.onValueChanged.fire({ path: this.path, valueChangedEvent: args });
-            this.reattachChildren(this);
+            this.reattachChildren();
         };
         this.attachBinding();
     }
 
     /**
      * Forces child (dependent) bindings to re-attach their bindings.
+     * @param {DataBinding?} binding Optionally specify a starting Binding to traverse from
+     * @param {IObservable?} detachFrom Optionally specify a data context to detach from
      */
-    public reattachChildren(binding?: DataBinding) {
+    public reattachChildren(binding?: DataBinding, detachFrom?: IObservable<any>) {
         if (!binding) {
-            return;
+            binding = this;
         }
         for (var c in binding.childBindings) {
             if (binding.childBindings.hasOwnProperty(c)) {
-                binding.childBindings[c].reattachBinding();
-                this.reattachChildren(binding.childBindings[c]);
+                binding.childBindings[c].reattachBinding(detachFrom);
+                this.reattachChildren(binding.childBindings[c], detachFrom);
             }
         }
     }
@@ -84,9 +86,10 @@ class DataBinding {
     /**
      * Detaches and re-attaches to target property.
      * Useful if parent properties or data context changes.
+     * @param {IObservable} Optionally specify a data context to detach from
      */
-    public reattachBinding(): void {
-        this.detachBinding();
+    public reattachBinding(detachFrom?: IObservable<any>): void {
+        this.detachBinding(detachFrom);
         this.attachBinding();
     }
 
@@ -94,7 +97,7 @@ class DataBinding {
      * Attaches binding to the target property.
      */
     public attachBinding(): void {
-        var prop = DataBinder.resolvePropertyPath(this.path, this.dataContext);
+        var prop = DataBinder.resolvePropertyPath(this.path, this.dataBinder.dataContext);
         if (prop) {
             prop.onValueChanged.subscribe(this.updateCallback);
             this.onValueChanged.fire({ path: this.path, valueChangedEvent: { oldValue: null, newValue: prop.value } });
@@ -105,12 +108,12 @@ class DataBinding {
      * Detaches binding from the target property.
      * @param {Observable<any>?} dataContext Optionally specify a data context to detach from
      */
-    public detachBinding(dataContext?: Observable<any>): void {
-        var prop: Observable<any>;
-        if (dataContext) {
-            prop = DataBinder.resolvePropertyPath(this.path, dataContext);
+    public detachBinding(detachFrom?: IObservable<any>): void {
+        var prop: IObservable<any>;
+        if (detachFrom) {
+            prop = DataBinder.resolvePropertyPath(this.path, detachFrom);
         } else {
-            prop = DataBinder.resolvePropertyPath(this.path, this.dataContext);
+            prop = DataBinder.resolvePropertyPath(this.path, this.dataBinder.dataContext);
         }
         if (prop) {
             prop.onValueChanged.unSubscribe(this.updateCallback);

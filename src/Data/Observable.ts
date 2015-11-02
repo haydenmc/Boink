@@ -1,9 +1,10 @@
 ﻿/// <reference path="../EventHandler.ts" />
+/// <reference path="IObservable.ts" />
 
 /**
  * A simple value store that notifies any subscribers of changes to its value.
  */
-class Observable<T> {
+class Observable<T> implements IObservable<T> {
     /* tslint:disable:variable-name */
     private _value: T;
     /* tslint:enable:variable-name */
@@ -32,9 +33,4 @@ class Observable<T> {
         this._onValueChanged = new EventHandler<ValueChangedEvent<T>>();
         this._value = defaultValue;
     }
-}
-
-interface ValueChangedEvent<T> {
-    oldValue: T;
-    newValue: T;
 }

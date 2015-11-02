@@ -38,6 +38,7 @@ class NodeBinding {
         for (var i = 0; i < this.bindings.length; i++) {
             this.bindings[i].onValueChanged.subscribe(this.updateCallback);
         }
+        this.updateNode();
     }
 
     /**

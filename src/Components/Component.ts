@@ -14,15 +14,18 @@ class Component extends HTMLElement {
      * The data-context that all data-binding occurs against.
      */
     /* tslint:disable:variable-name */
-    protected _dataContext: Observable<any>;
+    protected _dataContext: IObservable<any>;
     /* tslint:enable:variable-name */
-    public get dataContext(): Observable<any> {
+    public get dataContext(): IObservable<any> {
         return this._dataContext;
     }
-    public set dataContext(newContext: Observable<any>) {
-        this._dataContext = newContext;
-        if (this.dataBinder) {
-            this.dataBinder.dataContext = newContext;
+    public set dataContext(newContext: IObservable<any>) {
+        if (newContext !== this._dataContext) {
+            var oldContext = this._dataContext;
+            this._dataContext = newContext;
+            if (typeof oldContext !== "undefined") {
+                this.dataContextUpdated(oldContext, newContext);
+            }
         }
     }
 
@@ -62,7 +65,6 @@ class Component extends HTMLElement {
      */
     public createdCallback() {
         console.log("Component created: " + this.tagName);
-        this._dataContext = new Observable<any>();
     }
 
     /**
@@ -71,10 +73,10 @@ class Component extends HTMLElement {
      */
     public attachedCallback() {
         console.log("Component attached.");
-        if (this.dataContext.value == null) {
+        if (typeof this.dataContext === "undefined") {
             // Bind to the data-context of the parent element (if it exists). 
             var parentElement: HTMLElement = this;
-            while (typeof (<any>parentElement).dataContext === "undefined" || (<any>parentElement).dataContext.value == null) {
+            while (typeof (<any>parentElement).dataContext === "undefined") {
                 parentElement = parentElement.parentElement;
                 if (parentElement == null) {
                     throw new Error("No data context could be found in parents for element '" + this.tagName + "'");
@@ -89,11 +91,19 @@ class Component extends HTMLElement {
         // Apply data binding
         this.dataBinder = new DataBinder(this.dataContext);
 
-        // Respond to data context changes
-        // TODO
-
         // Find and apply template.
         this.applyShadowTemplate();
+    }
+
+    /**
+     * Called whenever the data context has changed.
+     * @param {IObservable} oldContext The previous data context
+     * @param {IObservable} newContext The new data context
+     */
+    public dataContextUpdated(oldContext: IObservable<any>, newContext: IObservable<any>): void {
+        if (this.dataBinder) {
+            this.dataBinder.dataContext = newContext;
+        }
     }
 
     /**
@@ -193,12 +203,12 @@ class Component extends HTMLElement {
      * @param {Node} node The root node
      * @param {Observable?} dataContext Optionally the data context to apply, if not the object's
      */
-    protected applyMyDataContext(node: Node, dataContext?: Observable<any>): void {
+    protected applyMyDataContext(node: Node, dataContext?: IObservable<any>): void {
         if (typeof dataContext === "undefined" || dataContext == null) {
             dataContext = this.dataContext;
         }
         if (node instanceof Component) {
-            (<Component>node)._dataContext = dataContext;
+            (<Component>node).dataContext = dataContext;
         } else {
             for (var i = 0; i < node.childNodes.length; i++) {
                 this.applyMyDataContext(node.childNodes[i], dataContext);

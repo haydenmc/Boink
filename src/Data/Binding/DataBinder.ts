@@ -27,19 +27,26 @@ class DataBinder {
      * The default data-context that data-binding occurs against.
      */
     /* tslint:disable:variable-name */
-    private _dataContext: Observable<any>;
+    private _dataContext: IObservable<any>;
     /* tslint:enable:variable-name */
-    public get dataContext(): Observable<any> {
+    public get dataContext(): IObservable<any> {
         return this._dataContext;
+    }
+    public set dataContext(newContext: IObservable<any>) {
+        if (this._dataContext !== newContext) {
+            var oldContext = this._dataContext;
+            this._dataContext = newContext;
+            this.bindingTree.reattachChildren(null, oldContext);
+        }
     }
 
     /**
      * Initializes a new DataBinder
      * @param {Observable<any>} dataContext The data context to use for bindings
      */
-    constructor(dataContext?: Observable<any>) {
+    constructor(dataContext?: IObservable<any>) {
         this._dataContext = dataContext;
-        this.bindingTree = new DataBinding("", this.dataContext);
+        this.bindingTree = new DataBinding("", this);
         this.nodeBindings = [];
     }
 
@@ -103,7 +110,7 @@ class DataBinder {
             if (parentBinding.childBindings[properties[i]]) {
                 parentBinding = parentBinding.childBindings[properties[i]];
             } else {
-                var bindingInfo = new DataBinding(traversedPath, this.dataContext);
+                var bindingInfo = new DataBinding(traversedPath, this);
                 parentBinding.childBindings[properties[i]] = bindingInfo;
                 parentBinding = bindingInfo;
             }
@@ -137,7 +144,7 @@ class DataBinder {
      * @param {string} path The property path to resolve
      * @returns {Observable<any>} The Observable Property
      */
-    public static resolvePropertyPath(path: string, dataContext: Observable<any>): Observable<any> {
+    public static resolvePropertyPath(path: string, dataContext: IObservable<any>): IObservable<any> {
         var currentDataContext = dataContext;
         if (path === "") {
             return currentDataContext;
