@@ -1,5 +1,5 @@
 ﻿/// <reference path="../Data/Observable.ts" />
-/// <reference path="../DataBinder.ts" />
+/// <reference path="../Data/Binding/DataBinder.ts" />
 
 /**
  * This is the base class for every Component (element).
@@ -21,7 +21,9 @@ class Component extends HTMLElement {
     }
     public set dataContext(newContext: Observable<any>) {
         this._dataContext = newContext;
-        this.dataBinder.dataContext = newContext;
+        if (this.dataBinder) {
+            this.dataBinder.dataContext = newContext;
+        }
     }
 
     /**
@@ -61,7 +63,6 @@ class Component extends HTMLElement {
     public createdCallback() {
         console.log("Component created: " + this.tagName);
         this._dataContext = new Observable<any>();
-        this.dataBinder = new DataBinder(this.dataContext);
     }
 
     /**
@@ -84,6 +85,9 @@ class Component extends HTMLElement {
 
         // Bind using data-context attribute if any.
         this.processDataContextAttributeBinding();
+
+        // Apply data binding
+        this.dataBinder = new DataBinder(this.dataContext);
 
         // Respond to data context changes
         // TODO
@@ -154,8 +158,8 @@ class Component extends HTMLElement {
                 }
             }
             // Process text node bindings on the shadow template.
-            this.dataBinder.processBindings(this.shadowRoot);
-            this.dataBinder.resolveAllBindings();
+            this.dataBinder.bindNodes(this.shadowRoot);
+
             // Process event bindings
             this.processEventBindings(this.shadowRoot);
         }

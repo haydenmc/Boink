@@ -50,7 +50,7 @@ class Page extends Component {
             }
             this.appendChild(clone);
             for (var i = 0; i < clone.childNodes.length; i++) {
-                this.dataBinder.processBindings(clone.childNodes[i]);
+                this.dataBinder.bindNodes(clone.childNodes[i]);
             }
         } else {
             console.error("Page defined without template.");

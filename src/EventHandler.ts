@@ -18,6 +18,10 @@ class EventHandler<T> {
         this.callbacks = this.callbacks.splice(index, 1);
     }
 
+    public unSubscribeAll() {
+        this.callbacks = new Array<(arg: T) => void>();
+    }
+
     public fire(arg: T) {
         for (var i = 0; i < this.callbacks.length; i++) {
             this.callbacks[i](arg);

@@ -12,14 +12,9 @@ class Repeater extends Component {
     private template: any;
 
     /**
-     * Used to store a reference to the DOM nodes used to display each list item.
+     * An array retaining information on each item in the repeater.
      */
-    private itemNodes: Array<Array<Node>>;
-
-    /**
-     * Used to store a reference to the data bindings that occur for each list item.
-     */
-    private itemNodeBindings: Array<Array<NodeDataBindingInformation>>;
+    private repeaterItems: RepeaterItem[];
 
     /**
      * Stores the callbacks that should be triggered on item events.
@@ -31,101 +26,8 @@ class Repeater extends Component {
      */
     public createdCallback() {
         super.createdCallback();
-        this.itemNodes = new Array<Array<Node>>();
-        this.itemNodeBindings = new Array<Array<NodeDataBindingInformation>>();
+        this.repeaterItems = [];
         this.itemEventCallbacks = { };
-    }
-
-    /**
-     * Override processing of event bindings - we take care of this ourselves.
-     */
-    protected processEventBindings(node: Node): void {
-        return;
-    }
-
-    /**
-     * Meant to be called if the data context is ever changed, requiring a refresh of the list.
-     * TODO: Release data bindings
-     */
-    public dataContextUpdated() {
-        for (var i = 0; i < this.itemNodes.length; i++) {
-            for (var j = 0; j < this.itemNodes[i].length; j++) {
-                this.itemNodes[i][j].parentNode.removeChild(this.itemNodes[i][j]);
-            }
-        }
-        this.itemNodes.splice(0, this.itemNodes.length);
-        this.itemNodeBindings.splice(0, this.itemNodeBindings.length);
-        this.populateAllItems();
-        (<ObservableArray<any>>this.dataContext.value).itemAdded.subscribe((arg) => this.itemAdded(arg));
-        (<ObservableArray<any>>this.dataContext.value).itemRemoved.subscribe((arg) => this.itemRemoved(arg));
-    }
-
-    /**
-     * Called when an item has been added to the backing observable array.
-     * @param {ObservableArrayEventArgs} arg Arguments detailing what was added and where
-     */
-    public itemAdded(arg: ObservableArrayEventArgs<any>): void {
-        // Throw the item into an observable for data context and bindings
-        var itemDataContext = new Observable<any>(arg.item);
-
-        // Clone the item template, apply data context to any components
-        var clone = document.importNode(this.template.content, true);
-        var cloneNodes = new Array<Node>();
-        for (var j = 0; j < clone.childNodes.length; j++) {
-            cloneNodes.push(clone.childNodes[j]);
-            this.applyMyDataContext(clone.childNodes[j], itemDataContext);
-            this.setParentComponent(clone.childNodes[j], this.parentComponent);
-            this.applyRepeaterEvents(clone.childNodes[j], itemDataContext);
-        }
-
-        // Capture the reference node before we shift the reference array
-        var refNode = null;
-        if (this.itemNodes.length === 0) { // First item
-            refNode = this.nextSibling;
-        } else if (arg.position < this.itemNodes.length) { // Middle item
-            refNode = this.itemNodes[arg.position][0];
-        } else { // Last item
-            var refNodes = this.itemNodes[this.itemNodes.length - 1];
-            refNode = <HTMLElement> refNodes[refNodes.length - 1].nextSibling;
-        }
-
-        this.itemNodes.splice(arg.position, 0, cloneNodes);
-
-        // Append to the DOM in the proper place
-        this.parentNode.insertBefore(clone, refNode);
-
-        // Process text bindings
-        var itemBindings = new Array<NodeDataBindingInformation>();
-        for (var j = 0; j < cloneNodes.length; j++) {
-            var nodeBindings = this.dataBinder.processBindings(cloneNodes[j], itemDataContext);
-            for (var k = 0; k < nodeBindings.length; k++) {
-                itemBindings.push(nodeBindings[k]);
-            }
-        }
-
-        // Append to the array in the proper place
-        this.itemNodeBindings.splice(arg.position, 0, itemBindings);
-
-        // Resolve text bindings
-        this.dataBinder.resolveBindings(itemBindings);
-    }
-
-    /**
-     * Called when an item has been removed from the backing observable array.
-     * @param {ObservableArrayEventArgs} arg Arguments detailing what was removed and where
-     */
-    public itemRemoved(arg: ObservableArrayEventArgs<any>): void {
-        // Release all the associated data bindings
-        var itemBindings = this.itemNodeBindings[arg.position];
-        this.dataBinder.releaseBindings(itemBindings);
-        this.itemNodeBindings.splice(arg.position, 1);
-
-        // Remove nodes from the DOM
-        var nodesToBeRemoved = this.itemNodes[arg.position];
-        for (var i = 0; i < nodesToBeRemoved.length; i++) {
-            nodesToBeRemoved[i].parentNode.removeChild(nodesToBeRemoved[i]);
-        }
-        this.itemNodes.splice(arg.position, 1);
     }
 
     /**
@@ -168,35 +70,123 @@ class Repeater extends Component {
     }
 
     /**
+     * Override processing of event bindings - we take care of this ourselves.
+     */
+    protected processEventBindings(node: Node): void {
+        return;
+    }
+
+    /**
+     * Meant to be called if the data context is ever changed, requiring a refresh of the list.
+     * TODO: Release data bindings
+     */
+    public dataContextUpdated() {
+        this.clearItems();
+        this.populateAllItems();
+        (<ObservableArray<any>>this.dataContext.value).itemAdded.subscribe((arg) => this.itemAdded(arg));
+        (<ObservableArray<any>>this.dataContext.value).itemRemoved.subscribe((arg) => this.itemRemoved(arg));
+    }
+
+    /**
+     * Called when an item has been added to the backing observable array.
+     * @param {ObservableArrayEventArgs} arg Arguments detailing what was added and where
+     */
+    public itemAdded(arg: ObservableArrayEventArgs<any>): void {
+        // Throw the item into an observable for data context and bindings
+        var itemDataContext = new Observable<any>(arg.item);
+        this.addItem(itemDataContext, arg.position);
+    }
+
+    /**
+     * Called when an item has been removed from the backing observable array.
+     * @param {ObservableArrayEventArgs} arg Arguments detailing what was removed and where
+     */
+    public itemRemoved(arg: ObservableArrayEventArgs<any>): void {
+        this.removeItem(arg.position);
+    }
+
+    /**
      * Reads every item from the observable array, processes data binding for it,
      * and adds it to the DOM. Assumes all processed list info / DOM is clean.
      */
     private populateAllItems(): void {
         var array = <ObservableArray<any>>this.dataContext.value;
-        var refNode = this.nextSibling;
         for (var i = 0; i < array.size; i++) {
             var itemDataContext = new Observable<any>(array.get(i));
-            var clone = document.importNode(this.template.content, true);
-            var cloneNodes = new Array<Node>();
-            for (var j = 0; j < clone.childNodes.length; j++) {
-                cloneNodes.push(clone.childNodes[j]);
-                this.applyMyDataContext(clone.childNodes[j], itemDataContext);
-                this.setParentComponent(clone.childNodes[j], this.parentComponent);
-                this.applyRepeaterEvents(clone.childNodes[j], itemDataContext);
-            }
-            this.itemNodes.push(cloneNodes);
-            this.parentNode.insertBefore(clone, refNode);
-            refNode = cloneNodes[cloneNodes.length - 1].nextSibling;
-            var itemBindings = new Array<NodeDataBindingInformation>();
-            for (var j = 0; j < cloneNodes.length; j++) {
-                var nodeBindings = this.dataBinder.processBindings(cloneNodes[j], itemDataContext);
-                for (var k = 0; k < nodeBindings.length; k++) {
-                    itemBindings.push(nodeBindings[k]);
-                }
-            }
-            this.itemNodeBindings.push(itemBindings);
+            this.addItem(itemDataContext);
         }
-        this.dataBinder.resolveAllBindings();
+    }
+
+    /**
+     * Used to add an item with the given data context at the given position.
+     * @param {Observable<any>} dataContext The data context of the new item
+     * @param {number?} position The position the item should be added. Added last if not specified.
+     */
+    private addItem(dataContext: Observable<any>, position?: number) {
+        if (typeof position === "undefined") {
+            position = this.repeaterItems.length;
+        }
+
+        var newItem: RepeaterItem = {
+            dataContext: dataContext,
+            dataBinder: new DataBinder(dataContext),
+            nodes: []
+        };
+
+        // Clone the item template, apply data context to any components, apply text node bindings
+        var clone = document.importNode(this.template.content, true);
+        for (var i = 0; i < clone.childNodes.length; i++) {
+            newItem.nodes.push(clone.childNodes[i]);
+            this.applyMyDataContext(clone.childNodes[i], dataContext);
+            this.setParentComponent(clone.childNodes[i], this.parentComponent);
+            this.applyRepeaterEvents(clone.childNodes[i], dataContext);
+            newItem.dataBinder.bindNodes(clone.childNodes[i]);
+        }
+
+        // Capture the reference node before we shift the reference array
+        var refNode = null;
+        if (this.repeaterItems.length === 0) { // First item
+            refNode = this.nextSibling;
+        } else if (position < this.repeaterItems.length) { // Middle item
+            refNode = this.repeaterItems[position].nodes[0];
+        } else { // Last item
+            var lastItem = this.repeaterItems[this.repeaterItems.length - 1];
+            refNode = <HTMLElement> lastItem.nodes[lastItem.nodes.length - 1].nextSibling;
+        }
+
+        this.repeaterItems.splice(position, 0, newItem);
+
+        // Append to the DOM in the proper place
+        this.parentNode.insertBefore(clone, refNode);
+    }
+
+    /**
+     * Used to remove an existing item at a given position.
+     * @param {number} position The position of the item to be removed
+     */
+    private removeItem(position: number) {
+        var item = this.repeaterItems[position];
+
+        // Remove item from array
+        this.repeaterItems.splice(position, 1);
+
+        // Release all the associated data bindings
+        item.dataBinder.removeAllBindings();
+
+        // Remove nodes from the DOM
+        var nodesToBeRemoved = item.nodes;
+        for (var i = 0; i < nodesToBeRemoved.length; i++) {
+            nodesToBeRemoved[i].parentNode.removeChild(nodesToBeRemoved[i]);
+        }
+    }
+
+    /**
+     * Clears all items, releases bindings, and removes their nodes from the DOM.
+     */
+    private clearItems(): void {
+        for (var i = this.repeaterItems.length - 1; i >= 0; i--) {
+            this.removeItem(i);
+        }
     }
 
     /**
@@ -214,3 +204,12 @@ class Repeater extends Component {
 }
 
 Component.register("ui-repeater", Repeater);
+
+/**
+ * A class to store information on each item in a Repeater component.
+ */
+interface RepeaterItem {
+    dataContext: Observable<any>;
+    dataBinder: DataBinder;
+    nodes: Node[];
+}
