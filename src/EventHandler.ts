@@ -16,7 +16,7 @@ class EventHandler<T> {
     public unSubscribe(callback: (arg: T) => void) {
         var index = this.callbacks.indexOf(callback);
         if (index >= 0) {
-            this.callbacks = this.callbacks.splice(index, 1);
+            this.callbacks.splice(index, 1);
         }
     }
 
