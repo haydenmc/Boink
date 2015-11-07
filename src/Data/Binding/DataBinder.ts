@@ -36,6 +36,7 @@ class DataBinder {
         if (this._dataContext !== newContext) {
             var oldContext = this._dataContext;
             this._dataContext = newContext;
+            this.bindingTree.reattachBinding(oldContext);
             this.bindingTree.reattachChildren(null, oldContext);
         }
     }
@@ -55,7 +56,7 @@ class DataBinder {
      * @param {string} str The string to search for bindings inside of
      * @returns {string[]} An array of bindings found
      */
-    public parseBindings(str: string): string[] {
+    public static parseBindings(str: string): string[] {
         var bindingProperties: string[] = [];
         var bindingMatches = str.match(DataBinder.bindingRegex);
         if (bindingMatches != null && bindingMatches.length > 0) {
@@ -82,7 +83,7 @@ class DataBinder {
                 this.bindNodes(node.childNodes[i]);
             }
         } else if (node.nodeType === 3) { // this is a text node (base case).
-            var bindingMatches = this.parseBindings(node.nodeValue);
+            var bindingMatches = DataBinder.parseBindings(node.nodeValue);
             var bindings: DataBinding[] = [];
             for (var i = 0; i < bindingMatches.length; i++) {
                 bindings.push(this.registerBinding(bindingMatches[i]));
@@ -99,6 +100,9 @@ class DataBinder {
      * @param {string} path the path to the property being bound relative to data context
      */
     public registerBinding(path: string) {
+        if (path === "") {
+            return this.bindingTree;
+        }
         var properties = path.split(".");
         var parentBinding = this.bindingTree;
         var traversedPath = "";

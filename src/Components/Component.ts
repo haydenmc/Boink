@@ -40,6 +40,11 @@ class Component extends HTMLElement {
     protected dataBinder: DataBinder;
 
     /**
+     * Used to update the data context dynamically (by binding, for example)
+     */
+    private dataContextUpdatedCallback: (arg: DataBindingValueChangedEvent) => void;
+
+    /**
      * Constructor - redirects to createdCallback as required by web components.
      * NOTE: Things you put in the Constructor may be ignored. Put in createdCallback method instead.
      */
@@ -65,6 +70,9 @@ class Component extends HTMLElement {
      */
     public createdCallback() {
         console.log("Component created: " + this.tagName);
+        this.dataContextUpdatedCallback = (arg) => {
+            this.dataContext = arg.binding.observableValue;
+        };
     }
 
     /**
@@ -73,17 +81,33 @@ class Component extends HTMLElement {
      */
     public attachedCallback() {
         console.log("Component attached.");
-        if (typeof this.dataContext === "undefined") {
-            // Bind to the data-context of the parent element (if it exists). 
-            var parentElement: HTMLElement = this;
-            while (typeof (<any>parentElement).dataContext === "undefined") {
+        // Find our parent component if one isn't defined.
+        if (typeof this.parentComponent === "undefined") {
+            var parentElement: HTMLElement = this.parentElement;
+            while (!(parentElement instanceof Component)) {
                 parentElement = parentElement.parentElement;
                 if (parentElement == null) {
-                    throw new Error("No data context could be found in parents for element '" + this.tagName + "'");
+                    break;
                 }
             }
-            this.dataContext = (<any>parentElement).dataContext;
+            this.parentComponent = <Component>parentElement;
         }
+        // Set data context to that of our parent component if it is not yet defined.
+        if (typeof this.dataContext === "undefined" && this.parentComponent) {
+            this.dataContext = this.parentComponent.dataContext;
+        }
+
+        // if (typeof this.dataContext === "undefined") {
+        //     // Bind to the data-context of the parent element (if it exists). 
+        //     var parentElement: HTMLElement = this;
+        //     while (typeof (<any>parentElement).dataContext === "undefined") {
+        //         parentElement = parentElement.parentElement;
+        //         if (parentElement == null) {
+        //             throw new Error("No data context could be found in parents for element '" + this.tagName + "'");
+        //         }
+        //     }
+        //     this.dataContext = (<any>parentElement).dataContext;
+        // }
 
         // Bind using data-context attribute if any.
         this.processDataContextAttributeBinding();
@@ -117,26 +141,10 @@ class Component extends HTMLElement {
         if (dataContextAttr != null && dataContextAttr.value !== "") {
             var dataContextAttrBindingMatches = dataContextAttr.value.match(DataBinder.bindingRegex);
             if (dataContextAttrBindingMatches != null && dataContextAttrBindingMatches.length > 0) {
-                // Only process the first match. We can only data-bind to one property.
                 var dataContextAttrBindingName = dataContextAttrBindingMatches[0].substr(2, dataContextAttrBindingMatches[0].length - 4);
-                var bindingContext = this.dataContext;
-                // Follow paths with dots
-                while (dataContextAttrBindingName.indexOf(".") >= 0) {
-                    var pathSection = dataContextAttrBindingName.substr(0, dataContextAttrBindingName.indexOf("."));
-                    dataContextAttrBindingName = dataContextAttrBindingName.substr(dataContextAttrBindingName.indexOf(".") + 1);
-                    if (typeof bindingContext.value[pathSection] !== "undefined") {
-                        bindingContext = bindingContext.value[pathSection];
-                    } else {
-                        throw new Error("Couldn't bind data context to non-existing property '"
-                            + pathSection + "' in " + this.tagName + ".");
-                    }
-                }
-                if (typeof bindingContext.value[dataContextAttrBindingName] !== "undefined") {
-                    this.dataContext = bindingContext.value[dataContextAttrBindingName];
-                } else {
-                    throw new Error("Couldn't bind data context to non-existing property '"
-                        + dataContextAttrBindingName + "' in " + this.tagName + ".");
-                }
+                var binding = this.parentComponent.dataBinder.registerBinding(dataContextAttrBindingName);
+                binding.onValueChanged.subscribe(this.dataContextUpdatedCallback);
+                this.dataContext = binding.observableValue;
             } else {
                 throw new Error("Couldn't parse data context binding expression '"
                     + dataContextAttr.value + "' of " + this.tagName

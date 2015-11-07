@@ -45,6 +45,13 @@ class DataBinding {
     }
 
     /**
+     * The Observable instance encapsulating the target property.
+     */
+    public get observableValue(): IObservable<any> {
+        return DataBinder.resolvePropertyPath(this.path, this.dataBinder.dataContext);
+    }
+
+    /**
      * Initializes the DataBinding class given a path to the property and a matching data context.
      * @param {string} path The property path to bind
      * @param {Observable<any>} The data context to bind against 
@@ -60,7 +67,7 @@ class DataBinding {
         }
         this.onValueChanged = new EventHandler<DataBindingValueChangedEvent>();
         this.updateCallback = (args) => {
-            this.onValueChanged.fire({ path: this.path, valueChangedEvent: args });
+            this.onValueChanged.fire({ path: this.path, binding: this, valueChangedEvent: args });
             this.reattachChildren();
         };
         this.attachBinding();
@@ -100,7 +107,7 @@ class DataBinding {
         var prop = DataBinder.resolvePropertyPath(this.path, this.dataBinder.dataContext);
         if (prop) {
             prop.onValueChanged.subscribe(this.updateCallback);
-            this.onValueChanged.fire({ path: this.path, valueChangedEvent: { oldValue: null, newValue: prop.value } });
+            this.onValueChanged.fire({ path: this.path, binding: this, valueChangedEvent: { oldValue: null, newValue: prop.value } });
         }
     }
 
@@ -133,5 +140,6 @@ class DataBinding {
  */
 class DataBindingValueChangedEvent {
     public path: string;
+    public binding: DataBinding;
     public valueChangedEvent: ValueChangedEvent<any>;
 }
