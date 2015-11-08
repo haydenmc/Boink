@@ -97,18 +97,6 @@ class Component extends HTMLElement {
             this.dataContext = this.parentComponent.dataContext;
         }
 
-        // if (typeof this.dataContext === "undefined") {
-        //     // Bind to the data-context of the parent element (if it exists). 
-        //     var parentElement: HTMLElement = this;
-        //     while (typeof (<any>parentElement).dataContext === "undefined") {
-        //         parentElement = parentElement.parentElement;
-        //         if (parentElement == null) {
-        //             throw new Error("No data context could be found in parents for element '" + this.tagName + "'");
-        //         }
-        //     }
-        //     this.dataContext = (<any>parentElement).dataContext;
-        // }
-
         // Bind using data-context attribute if any.
         this.processDataContextAttributeBinding();
 
