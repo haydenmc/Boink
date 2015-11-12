@@ -69,6 +69,10 @@ class Repeater extends Component {
         } else {
             console.warn(this.tagName + " attached without a valid data context, expecting an ObservableArray.");
         }
+
+        // Bind add + remove events
+        (<ObservableArray<any>>this.dataContext.value).itemAdded.subscribe((arg) => this.itemAdded(arg));
+        (<ObservableArray<any>>this.dataContext.value).itemRemoved.subscribe((arg) => this.itemRemoved(arg));
     }
 
     /**
