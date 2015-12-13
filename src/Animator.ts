@@ -7,8 +7,9 @@ class Animator {
 	 * @param {HTMLElement} element The element to apply the animation to
 	 * @param {string} name The name as defined by a CSS class
 	 * @param {boolean?} transient Whether or not the animation should be removed after it has finished (default true)
+	 * @param {Function?} endCallback Callback to fire when the animation has ended
 	 */
-	public static applyAnimation(element: HTMLElement, name: string, transient?: boolean): void {
+	public static applyAnimation(element: HTMLElement, name: string, transient?: boolean, endCallback?: () => void): void {
 		if (typeof transient === "undefined") {
 			transient = true;
 		}
@@ -18,6 +19,9 @@ class Animator {
 				element.removeEventListener("animationend", endEvent);
 			};
 			element.addEventListener("animationend", endEvent);
+		}
+		if (typeof endCallback !== "undefined") {
+			element.addEventListener("animationend", endCallback);
 		}
 		element.classList.add(name);
 	}
