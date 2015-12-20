@@ -23,7 +23,7 @@ class Component extends HTMLElement {
         if (newContext !== this._dataContext) {
             var oldContext = this._dataContext;
             this._dataContext = newContext;
-            if (typeof oldContext !== "undefined") {
+            if (typeof oldContext !== "undefined" && newContext !== oldContext) {
                 this.dataContextUpdated(oldContext, newContext);
             }
         }

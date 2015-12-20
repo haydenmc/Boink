@@ -116,6 +116,7 @@ class Repeater extends Component {
      * and adds it to the DOM. Assumes all processed list info / DOM is clean.
      */
     private populateAllItems(): void {
+        console.log("REPEATER: Populating all items.");
         var array = <ObservableArray<any>>this.dataContext.value;
         for (var i = 0; i < array.size; i++) {
             var itemDataContext = new Observable<any>(array.get(i));
