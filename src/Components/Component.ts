@@ -1,7 +1,4 @@
-﻿/// <reference path="../Data/Observable.ts" />
-/// <reference path="../Data/Binding/DataBinder.ts" />
-
-/**
+﻿/**
  * This is the base class for every Component (element).
  */
 class Component extends HTMLElement {
@@ -129,7 +126,8 @@ class Component extends HTMLElement {
         if (dataContextAttr != null && dataContextAttr.value !== "") {
             var dataContextAttrBindingMatches = dataContextAttr.value.match(DataBinder.bindingRegex);
             if (dataContextAttrBindingMatches != null && dataContextAttrBindingMatches.length > 0) {
-                var dataContextAttrBindingName = dataContextAttrBindingMatches[0].substr(2, dataContextAttrBindingMatches[0].length - 4);
+                var dataContextAttrBindingName
+                    = dataContextAttrBindingMatches[0].substr(2, dataContextAttrBindingMatches[0].length - 4);
                 var binding = this.parentComponent.dataBinder.registerBinding(dataContextAttrBindingName);
                 binding.onValueChanged.subscribe(this.dataContextUpdatedCallback);
                 this._dataContext = binding.observableValue; // Update _dataContext so we don't fire a change event.

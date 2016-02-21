@@ -1,6 +1,3 @@
-/// <reference path="Component.ts" />
-/// <reference path="Page.ts" />
-
 /**
  * A Frame serves as a way to render and navigate between pages contained within.
  */
@@ -10,7 +7,7 @@ class Frame extends Component {
      */
     private currentPage: Page;
 
-	/**
+    /**
      * Called by the browser when an instance of this element/component is created.
      */
     public createdCallback() {

@@ -1,5 +1,3 @@
-/// <reference path="DataBinding.ts" />
-
 /**
  * A class to store information on node bindings in the DOM.
  */

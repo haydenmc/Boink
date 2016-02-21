@@ -1,0 +1,37 @@
+{
+    "compilerOptions": {
+        "module": "amd",
+        "noImplicitAny": false,
+        "removeComments": false,
+        "preserveConstEnums": true,
+        "outFile": "out/boink.js",
+        "sourceMap": true,
+        "target": "es5",
+        "declaration": true
+    },
+    "filesGlob": [
+        "src/*.ts",
+        "src/Components/**/*.ts",
+        "src/Data/**/*.ts",
+        "typings/browser.d.ts"
+    ],
+    "files": [
+        "src/Animator.ts",
+        "src/EventHandler.ts",
+        "src/Components/Application.ts",
+        "src/Components/Component.ts",
+        "src/Components/Frame.ts",
+        "src/Components/Page.ts",
+        "src/Components/Repeater.ts",
+        "src/Data/AutoMapper.ts",
+        "src/Data/Binding/DataBinder.ts",
+        "src/Data/Binding/DataBinding.ts",
+        "src/Data/Binding/NodeBinding.ts",
+        "src/Data/IObservable.ts",
+        "src/Data/JsonRequest.ts",
+        "src/Data/Observable.ts",
+        "src/Data/ObservableArray.ts",
+        "src/Data/ObservableProxy.ts",
+        "typings/browser.d.ts"
+    ]
+}

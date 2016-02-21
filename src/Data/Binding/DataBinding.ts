@@ -1,5 +1,3 @@
-/// <reference path="DataBinder.ts" />
-
 /**
  * A class to maintain information on a data-bound property.
  * Used to construct a dependency tree of bindings.

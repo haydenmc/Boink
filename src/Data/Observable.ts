@@ -1,7 +1,4 @@
-﻿/// <reference path="../EventHandler.ts" />
-/// <reference path="IObservable.ts" />
-
-/**
+﻿/**
  * A simple value store that notifies any subscribers of changes to its value.
  */
 class Observable<T> implements IObservable<T> {

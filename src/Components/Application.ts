@@ -1,6 +1,4 @@
-﻿/// <reference path="Component.ts" />
-
-class Application extends Component {
+﻿class Application extends Component {
     public static instance;
 
     public createdCallback() {

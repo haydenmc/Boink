@@ -1,9 +1,4 @@
-﻿/// <reference path="DataBinding.ts" />
-/// <reference path="NodeBinding.ts" />
-/// <reference path="../../Components/Component.ts" />
-/// <reference path="../Observable.ts" />
-
-/**
+﻿/**
  * This class serves as the foundation for data binding in Components,
  * and maybe eventually beyond.
  */

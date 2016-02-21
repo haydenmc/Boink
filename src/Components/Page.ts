@@ -1,6 +1,3 @@
-/// <reference path="Component.ts" />
-/// <reference path="Frame.ts" />
-
 /**
  * A Page is a collection of content that is rendered inside of a Frame.
  */
@@ -10,7 +7,7 @@ class Page extends Component {
      */
     private contentNodes: Array<Node>;
 
-	/**
+    /**
      * Called by the browser when an instance of this element/component is created.
      */
     public createdCallback() {

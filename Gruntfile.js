@@ -7,11 +7,7 @@ module.exports = function (grunt) {
         pkg: grunt.file.readJSON('package.json'),
         ts: {
             default: {
-                src: ["src/**/*.ts"],
-                options: {
-                    declaration: true
-                },
-                out: 'out/boink.js'
+                tsconfig: true
             }
         },
         tslint: {
@@ -19,7 +15,7 @@ module.exports = function (grunt) {
                 configuration: grunt.file.readJSON("tslint.json")
             },
             files: {
-                src: ['src/**/*.ts']
+                src: ["src/Components/**/*.ts", "src/Data/**/*.ts"]
             }
         },
         uglify: {

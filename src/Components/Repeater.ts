@@ -1,7 +1,4 @@
-﻿/// <reference path="Component.ts" />
-/// <reference path="../Data/ObservableArray.ts" />
-
-/**
+﻿/**
  * The repeater control takes a template, and 'repeats' it with data from
  * the observable array of items provided via data context.
  */
