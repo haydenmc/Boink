@@ -1,3 +1,5 @@
+/// <reference path="IObservable.ts" />
+
 /**
  * An ObservableProxy routes Observable properties through conversion functions to modify the value.
  */

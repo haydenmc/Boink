@@ -1,3 +1,5 @@
+/// <reference path="Component.ts" />
+
 /**
  * A Page is a collection of content that is rendered inside of a Frame.
  */

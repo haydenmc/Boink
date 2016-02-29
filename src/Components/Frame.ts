@@ -1,3 +1,5 @@
+/// <reference path="Component.ts" />
+
 /**
  * A Frame serves as a way to render and navigate between pages contained within.
  */
