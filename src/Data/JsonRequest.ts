@@ -16,8 +16,9 @@ class JsonRequest {
 	 * @param httpMethod HTTP method used in request
 	 * @param postData POST data to send, if the method used is post
      * @param authorization string Authorization header information
+     * @param contentType Content-Type header
 	 */
-	private static httpRequest<T>(url: string, method: httpMethod, postData?: any, authorization?: string): Promise<T> {
+	private static httpRequest<T>(url: string, method: httpMethod, postData?: any, authorization?: string, contentType?: string): Promise<T> {
 		// I promise I'll do this. Pinky swear.
 		return new Promise<T>((resolve, reject) => {
 			var req = new XMLHttpRequest();
@@ -33,6 +34,10 @@ class JsonRequest {
 			if (typeof authorization !== "undefined") {
 				req.setRequestHeader("Authorization", authorization);
 			}
+
+            if (typeof contentType !== "undefined") {
+                req.setRequestHeader("Content-Type", contentType);
+            }
 
 			req.onload = function () {
 				// This is called even on 404 etc
@@ -71,9 +76,10 @@ class JsonRequest {
 	 * 
 	 * @param url URL to request
      * @param authorization Authorization header
+     * @param contentType Content-Type header
 	 */
-	public static httpGet<T>(url: string, authorization?: string): Promise<T> {
-		return JsonRequest.httpRequest<T>(url, httpMethod.GET, null, authorization);
+	public static httpGet<T>(url: string, authorization?: string, contentType?: string): Promise<T> {
+		return JsonRequest.httpRequest<T>(url, httpMethod.GET, null, authorization, contentType);
 	}
 
 	/**
@@ -82,8 +88,9 @@ class JsonRequest {
 	 * @param url URL to request
 	 * @param postData JSON post data to send
      * @param authorization Authorization header
+     * @param contentType Content-Type header
 	 */
-	public static httpPost<T>(url: string, postData: any, authorization?: string): Promise<T> {
-		return JsonRequest.httpRequest<T>(url, httpMethod.POST, postData, authorization);
+	public static httpPost<T>(url: string, postData: any, authorization?: string, contentType?: string): Promise<T> {
+		return JsonRequest.httpRequest<T>(url, httpMethod.POST, postData, authorization, contentType);
 	}
 }
